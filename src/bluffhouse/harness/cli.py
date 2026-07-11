@@ -19,17 +19,17 @@ BOT_KINDS = ("random", "checkcall", "fold", "allin")
 LLM_PROVIDERS = ("anthropic", "claude", "openai", "xai", "grok", "openrouter", "ollama")
 
 
-def build_client(kind: str) -> LLMClient:
+def build_client(kind: str, api_key: str | None = None) -> LLMClient:
     provider, _, model = kind.partition(":")
     provider = provider.lower()
     try:
         if provider in ("anthropic", "claude"):
-            return AnthropicClient(model or "claude-opus-4-8")
+            return AnthropicClient(model or "claude-opus-4-8", api_key=api_key)
         if provider in ("openai", "xai", "grok", "openrouter", "ollama"):
             if not model:
                 raise SystemExit(f"'{provider}' needs a model, e.g. {provider}:MODEL")
             preset = {"grok": "xai"}.get(provider, provider)
-            return OpenAICompatClient(model, preset=preset)
+            return OpenAICompatClient(model, preset=preset, api_key=api_key)
     except LLMError as exc:
         raise SystemExit(f"model {kind}: {exc}") from exc
     raise SystemExit(
@@ -37,7 +37,7 @@ def build_client(kind: str) -> LLMClient:
     )
 
 
-def build_agent(kind: str, agent_id: str, seed: int) -> Agent:
+def build_agent(kind: str, agent_id: str, seed: int, api_key: str | None = None) -> Agent:
     if kind == "random":
         return RandomBot(agent_id, seed)
     if kind == "checkcall":
@@ -46,7 +46,7 @@ def build_agent(kind: str, agent_id: str, seed: int) -> Agent:
         return FoldBot(agent_id)
     if kind == "allin":
         return AllInBot(agent_id)
-    return LLMAgent(agent_id, build_client(kind))
+    return LLMAgent(agent_id, build_client(kind, api_key=api_key))
 
 
 def print_summary(result: GameResult) -> None:

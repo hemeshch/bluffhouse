@@ -1,11 +1,13 @@
-"""The product wrapper: demo command, serve hub, belief opt-out, judge resilience."""
+"""The product wrapper: demo command, serve API, belief opt-out, judge resilience."""
 
 import json
+
+from fastapi.testclient import TestClient
 
 from bluffhouse.benchmark import judge_run, run_benchmark
 from bluffhouse.demo import demo_game
 from bluffhouse.harness.cli import main
-from bluffhouse.harness.serve import collect_entries, render_hub
+from bluffhouse.harness.serve import collect_entries, create_app
 from bluffhouse.llm import LLMClient, LLMError, MockClient
 from bluffhouse.models import BeliefsUpdated, MessageSent, TableConfig
 from test_benchmark import Believer, builder
@@ -38,7 +40,7 @@ def test_demo_cli_writes_and_respects_no_open(tmp_path, capsys):
     assert (demo_dirs[0] / "replay.html").exists()
 
 
-# ── serve hub ───────────────────────────────────────────────────────
+# ── serve API ───────────────────────────────────────────────────────
 
 
 def test_hub_lists_runs_and_benches(tmp_path):
@@ -54,15 +56,91 @@ def test_hub_lists_runs_and_benches(tmp_path):
     # bench rotations are not double-listed as standalone runs
     assert all("rotation" not in r["name"] for r in entries["runs"])
 
-    html = render_hub(tmp_path)
-    assert "demo-1/replay.html" in html
-    assert "bench-1/rotation-0/replay.html" in html
-    assert "random#0" in html
+    client = TestClient(create_app(tmp_path))
+    hub = client.get("/api/hub").json()
+    assert [r["name"] for r in hub["runs"]] == ["demo-1"]
+    assert hub["benches"][0]["rows"][0][0] in ("random#0", "checkcall#1")
+    # raw run files are served under /runs/
+    assert client.get("/runs/demo-1/replay.html").status_code == 200
 
 
-def test_hub_handles_empty_directory(tmp_path):
-    html = render_hub(tmp_path)
-    assert "bluffhouse demo" in html  # the nudge, not a crash
+def test_api_hub_handles_empty_directory(tmp_path):
+    client = TestClient(create_app(tmp_path))
+    hub = client.get("/api/hub").json()
+    assert hub == {"sweeps": [], "benches": [], "runs": []}
+
+
+def test_api_replay_serves_payload_and_guards_traversal(tmp_path):
+    result = demo_game()
+    result.write(tmp_path / "demo-1")
+    client = TestClient(create_app(tmp_path))
+
+    payload = client.get("/api/replay", params={"dir": "demo-1"}).json()
+    assert set(payload) == {"run", "events", "observations", "llm", "judgments"}
+    assert len(payload["events"]) == len(result.log.events)
+    assert payload["run"]["seed"] == result.config.seed
+
+    assert client.get("/api/replay", params={"dir": "../demo-1"}).status_code == 400
+    assert client.get("/api/replay", params={"dir": "nope"}).status_code == 404
+
+
+def test_api_demo_generates_once_and_reuses(tmp_path):
+    client = TestClient(create_app(tmp_path))
+    first = client.post("/api/demo").json()
+    assert (tmp_path / first["dir"] / "run.json").exists()
+    again = client.post("/api/demo").json()
+    assert again == first
+    assert client.get("/api/replay", params={"dir": first["dir"]}).status_code == 200
+
+
+# ── live games over SSE ─────────────────────────────────────────────
+
+
+def test_live_game_streams_and_writes(tmp_path):
+    client = TestClient(create_app(tmp_path))
+    resp = client.post("/api/live", json={
+        "seats": [{"spec": "checkcall"}, {"spec": "fold"}, {"spec": "random", "name": "Rando"}],
+        "hands": 2, "mode": 0, "seed": 7,
+    })
+    assert resp.status_code == 200
+    started = resp.json()
+    assert started["config"]["agent_ids"] == ["checkcall-1", "fold-2", "Rando"]
+    job = started["job"]
+
+    events, done = [], None
+    with client.stream("GET", f"/api/live/{job}/events") as stream:
+        kind = None
+        for line in stream.iter_lines():
+            if line.startswith("event: "):
+                kind = line.removeprefix("event: ")
+            elif line.startswith("data: "):
+                data = json.loads(line.removeprefix("data: "))
+                if kind == "event":
+                    events.append(data)
+                elif kind == "done":
+                    done = data
+                    break
+
+    assert done and done["status"] == "done" and done["run_dir"]
+    assert (tmp_path / done["run_dir"] / "replay.html").exists()
+    types = {e["type"] for e in events}
+    assert {"game_started", "hand_started", "action_taken", "hand_ended", "game_ended"} <= types
+    snap = client.get(f"/api/live/{job}").json()
+    assert snap["status"] == "done"
+    assert snap["events"] == len(events)
+    # the finished live run shows up in the hub like any other
+    hub = client.get("/api/hub").json()
+    assert any(r["name"] == done["run_dir"] for r in hub["runs"])
+
+
+def test_live_rejects_bad_specs(tmp_path):
+    client = TestClient(create_app(tmp_path))
+    bad = client.post("/api/live", json={
+        "seats": [{"spec": "nonsense"}, {"spec": "fold"}], "mode": 0,
+    })
+    assert bad.status_code == 400
+    too_few = client.post("/api/live", json={"seats": [{"spec": "fold"}]})
+    assert too_few.status_code == 422
 
 
 # ── belief opt-out ──────────────────────────────────────────────────

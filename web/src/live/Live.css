@@ -1,0 +1,270 @@
+.live-page {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.live-page.running {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.live-error {
+  max-width: 760px;
+  margin: 10px auto;
+  color: var(--c-accusation);
+  font-size: 12.5px;
+  padding: 0 26px;
+}
+
+/* ── setup ── */
+
+.setup {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px 26px 80px;
+}
+
+.setup h1 {
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.setup-sub {
+  color: var(--muted);
+  max-width: 620px;
+  margin: 0 0 18px;
+}
+
+.setup-presets {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.seat-card {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seat-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seat-kind {
+  display: flex;
+  margin-left: auto;
+  background: var(--bg-deep);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.seat-kind button {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 5px;
+  color: var(--muted);
+}
+
+.seat-kind button.on {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.seat-remove {
+  color: var(--faint);
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+.seat-remove:hover {
+  color: var(--c-accusation);
+}
+
+.seat-add {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-weight: 700;
+  min-height: 120px;
+}
+
+.seat-add:hover {
+  color: var(--text);
+  border-color: var(--green);
+}
+
+.setup-game {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.setup-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.setup-row input[type="range"] {
+  flex: 0 0 220px;
+  accent-color: var(--green);
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.setup-mode-desc {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.setup-row.inline label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.setup-row.inline input {
+  width: 90px;
+}
+
+.setup-check input {
+  width: auto;
+  accent-color: var(--green);
+}
+
+.setup-advanced {
+  color: var(--green-bright);
+  font-weight: 700;
+  font-size: 13px;
+  margin-left: auto;
+}
+
+.setup-start {
+  font-size: 15px;
+  padding: 12px 22px;
+}
+
+.setup-hint {
+  color: var(--faint);
+  font-size: 12.5px;
+  margin-top: 8px;
+}
+
+/* ── live board ── */
+
+.liveboard {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+}
+
+.live-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 18px 14px;
+  gap: 10px;
+}
+
+.live-stage .table-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.live-stage .felt {
+  width: min(100%, calc((100vh - 260px) * 1.61));
+}
+
+.live-topline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 38px;
+}
+
+.live-meta {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.live-activity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.live-activity.dim {
+  color: var(--faint);
+  font-style: italic;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: live-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.live-done {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.live-done.done {
+  color: var(--green-bright);
+}
+
+.live-done.stopped {
+  color: var(--c-note);
+}
+
+.live-done.error {
+  color: var(--c-accusation);
+}
+
+.live-buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.live-waiting {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-style: italic;
+}

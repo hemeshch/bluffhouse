@@ -5,7 +5,7 @@
 **July 2026.**
 
 <p align="center">
-  <a href="./index.html"><b>Read the proposal</b></a>
+  <a href="./demos/mode6-full-manipulation.html"><b>Demo: full manipulation</b></a>
   &nbsp;·&nbsp;
   <a href="./demos/mode2-table-talk.html">Demo: table talk & whispers</a>
   &nbsp;·&nbsp;
@@ -14,8 +14,6 @@
   <a href="./demos/presentation.html">Deck</a>
   &nbsp;·&nbsp;
   <a href="./docs/demo-script.md">Demo script</a>
-  &nbsp;·&nbsp;
-  <a href="./docs/phase-8.md">What's next</a>
 </p>
 
 ---
@@ -209,13 +207,17 @@ Even the bot baseline above is instructive: `fold` beats `checkcall` because fol
 
 ---
 
-## the replay viewer
+## the app
 
-Every run writes a self-contained `replay.html` — no server, no dependencies. A walnut-railed table under one warm light: chip-stack bets, engraved nameplates, speech bubbles on the felt (ivory for speech, hushed-dark for whispers, red-bordered for accusations).
+`bluffhouse serve` opens the product: a local React app over everything in `runs/`.
 
-The heart of it is the **perspective switcher**. "Ground truth" shows everything: every hole card, every declared intent (*meant: …*), every reception ledger (`GPT received · Llama fragment ~34% · Claude missed`), every heat change. Click a seat instead and you see only what that agent received — hole cards hidden, whispers you weren't part of simply absent, intercepted fragments shown exactly as shredded. The caption line tells you when a moment "never reached" that player.
+**The replay theater** draws communication as geometry, not chat logs. Whispers arc between seats, and every eavesdropper gets a branching tap-line with the shredded fragment they caught and a confidence ring. Notes physically slide across the felt — including to exactly the wrong reader. Accusations fire a beam at the accused while the heat meter on their nameplate ticks up. Attention is a persistent gaze line whose thickness is the focus share, so "Claude is locked on Grok" is something you *see*. A plain-English narration bar captions every event, and presentation mode (`p`) goes full-screen with auto-pacing that lingers on the social moments — built for showing this to a room that has never seen it.
 
-LLM reasoning rides along: each model decision's private reasoning appears under its action, including the moments a malformed reply got replaced with a safe fallback.
+The heart is still the **perspective switcher**. "The table" shows everything: every hole card, every declared intent (*intent: …*), every reception ledger (`GPT got it clean · Claude caught a fragment (41%) · Llama missed it entirely`), every heat change. Click a seat instead and you see only what that agent received — hole cards hidden, whispers you weren't part of simply absent, intercepted fragments shown exactly as shredded. The caption tells you when a moment "never reached" that player. LLM reasoning rides along under each action, including the moments a malformed reply got replaced with a safe fallback.
+
+**Live mode** seats 2–10 players — frontier models by API key, local models through Ollama, or keyless bots — and streams the game onto the same table as it happens (SSE, with a "GPT is thinking…" chip). Keys stay in memory and are never written to disk; finished games land in `runs/` with a full replay. **Leaderboard** renders benches and multi-seed sweeps: adjusted-chips rankings, bootstrap CI bars, 0–100 dimension scores, head-to-head win-rate heatmaps, one replay per rotation.
+
+Every run also still writes a self-contained `replay.html` — the same React viewer inlined into a single file that opens over `file://`. No server, no dependencies, safe to email.
 
 ---
 
@@ -227,7 +229,7 @@ LLM reasoning rides along: each model decision's private reasoning appears under
 - **Anonymized seats.** Benchmark prompts say "P3", never "GPT". Name-recognition bias is dead on arrival, and the seat↔model mapping lives only in `bench.json`.
 - **Model-agnostic by one interface.** `LLMClient.complete()` is all an agent sees. Claude gets a native adapter; OpenAI, Grok, OpenRouter, and anything OpenAI-compatible (Ollama, vLLM) share a second one. A new provider is one class. Missing keys fail fast at seat construction, not mid-hand.
 - **Every provider call transcribed.** Prompt, reply, tokens, latency, parse faults, and a `decision_id` that lets the replay match reasoning to actions. Dollar cost is deliberately a downstream concern — tokens are the ground truth; prices rot.
-- **Tested without tokens.** 75 tests: exact side-pot math against fixed decks, byte-identical determinism per mode, statistical bands on interception rates, privacy proofs (intents never reach observations, whispers never reach third parties), and a full LLM game against the mock client.
+- **Tested without tokens.** 98 Python tests + a golden-fixture suite for the viewer's state machine: exact side-pot math against fixed decks, byte-identical determinism per mode, statistical bands on interception rates, privacy proofs (intents never reach observations, whispers never reach third parties), a full LLM game against the mock client, and a bots-only live game streamed end-to-end over SSE.
 - **Graceful everywhere.** A model that replies in prose gets one correction round-trip, then a safe fallback — a bad reply wastes a turn, never crashes a game.
 
 ---
@@ -243,7 +245,7 @@ uv sync
 # a whisper, an intercepted fragment, a public accusation, a burned note
 uv run bluffhouse demo
 
-# a local hub over everything in runs/: games, benches, leaderboards
+# the app: replay theater, live games (pick models + keys in the UI), leaderboards
 uv run bluffhouse serve
 
 # watch bots play a full game, then open the replay it wrote
@@ -269,7 +271,6 @@ Run artifacts land in `runs/<id>/`: `events.jsonl` (ground truth), `observations
 
 ```
 bluffhouse/
-├── index.html                     # the original research proposal — the north star
 ├── demos/                         # self-contained replay demos (open in a browser)
 ├── docs/phase-8.md                # what's next: parallel rotations, CIs, belief tracking
 ├── src/bluffhouse/
@@ -292,11 +293,21 @@ bluffhouse/
 │   ├── harness/
 │   │   ├── game.py                # phases per street, validation, ledgers, run artifacts
 │   │   ├── projection.py          # ground truth → per-agent observations (RNG-free)
-│   │   └── cli.py                 # bluffhouse run / bluffhouse bench
+│   │   ├── serve.py               # FastAPI: the app, run discovery, replay payloads, SSE
+│   │   ├── live.py                # live games on worker threads, streamed as they emit
+│   │   └── cli.py                 # bluffhouse run / bench / demo / serve / judge
 │   ├── benchmark/
 │   │   ├── runner.py              # duplicate rotations, anonymized seating
 │   │   └── scoring.py             # adjusted chips + judge-free scorecard dimensions
-│   └── viewer/
-│       └── template.html          # the replay: felt, chips, POV switcher, reasoning inline
-└── tests/                         # 75 tests, token-free
+│   ├── viewer/
+│   │   └── template.html          # single-file React replay build (payload injected per run)
+│   └── webapp/static/             # the built React app served by `bluffhouse serve`
+├── web/                           # the frontend source: Vite + React + TypeScript
+│   └── src/
+│       ├── replay/                # the theater: table, seats, SVG effects, POV, narration
+│       ├── live/                  # seat config + SSE-streamed live table
+│       └── leaderboard/           # rankings, CI bars, win-rate heatmaps
+└── tests/                         # 98 Python tests + a vitest golden-fixture suite, token-free
 ```
+
+Frontend development: `npm install && npm run dev` in `web/` (proxies to a running `bluffhouse serve`); `npm run build` refreshes both the served app and the single-file replay template — both build outputs are committed, so Python users never need Node.

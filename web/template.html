@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>bluffhouse replay</title>
+    <!--
+      Classic (non-module) script: Vite copies it through verbatim, so the
+      marker below survives the build. render_replay() replaces it with the
+      run's payload to produce a self-contained replay.html.
+    -->
+    <script>
+      window.__BLUFFHOUSE_EMBED__ = /*__BLUFFHOUSE_DATA__*/ null;
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/replay-main.tsx"></script>
+  </body>
+</html>

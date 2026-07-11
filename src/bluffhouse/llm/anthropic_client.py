@@ -28,10 +28,11 @@ class AnthropicClient(LLMClient):
         model: str = "claude-opus-4-8",
         thinking: Literal["adaptive", "off"] = "adaptive",
         max_retries: int = 3,
+        api_key: str | None = None,
     ):
         self.model = model
         self._thinking = thinking
-        self._client = anthropic.Anthropic(max_retries=max_retries)
+        self._client = anthropic.Anthropic(max_retries=max_retries, api_key=api_key)
         # Fail fast at the table, not mid-hand: mirror the SDK's own auth
         # check (api_key / auth_token / credentials, resolved from env or an
         # `ant auth login` profile).

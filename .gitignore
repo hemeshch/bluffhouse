@@ -10,3 +10,6 @@ wheels/
 .venv
 runs/
 .DS_Store
+
+# Web
+node_modules/

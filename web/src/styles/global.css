@@ -1,0 +1,179 @@
+/* bluffhouse design tokens — dark, warm, product-grade (chess.com-adjacent) */
+
+:root {
+  --bg: #262421;
+  --bg-deep: #1d1b19;
+  --panel: #302e2b;
+  --panel-2: #383632;
+  --raised: #3a3733;
+  --border: #3e3c39;
+  --border-strong: #4b4845;
+  --text: #edebe9;
+  --muted: #a29f9b;
+  --faint: #7c7975;
+  --green: #81b64c;
+  --green-bright: #95bb4a;
+  --green-deep: #5d9948;
+
+  /* felt */
+  --felt: #3a6b3f;
+  --felt-dark: #2e5733;
+  --felt-edge: #24462a;
+  --rail: #211f1d;
+
+  /* modalities */
+  --c-speech: #9db4c8;
+  --c-whisper: #a78bfa;
+  --c-note: #e2c044;
+  --c-accusation: #e36c6c;
+  --c-sign: #5bc0be;
+  --c-env: #7c7975;
+
+  /* heat */
+  --heat: #e36c6c;
+
+  /* cards */
+  --card-face: #f5f2ec;
+  --card-red: #c94f4f;
+  --card-black: #2b2926;
+  --card-back: #7a4d9e;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --font: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--green);
+}
+
+a {
+  color: var(--green-bright);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* shared primitives */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border-bottom: 3px solid var(--green-deep);
+  transition: filter 0.12s;
+}
+
+.btn:hover {
+  filter: brightness(1.08);
+}
+
+.btn:active {
+  border-bottom-width: 1px;
+  transform: translateY(2px);
+}
+
+.btn.secondary {
+  background: var(--raised);
+  border-bottom-color: var(--bg-deep);
+  color: var(--text);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.chip-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--raised);
+  color: var(--muted);
+}
+
+.card-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}

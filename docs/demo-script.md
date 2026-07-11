@@ -1,4 +1,4 @@
-# Demo recording script (~4½ minutes)
+# Demo recording script (~5 minutes)
 
 A scene-by-scene guide for recording the bluffhouse demo video. Everything
 runs locally, needs **no API keys**, and is deterministic — you can retake
@@ -8,10 +8,12 @@ any scene and get the identical game.
 
 ```sh
 cd bluffhouse
-uv sync && uv run pytest -q        # confidence check: 93 passed
+uv sync && uv run pytest -q        # confidence check: 98 passed
 open demos/presentation.html        # the deck, full-screen it (⌃⌘F in most browsers)
-uv run bluffhouse demo --no-open    # pre-generate the demo run
-uv run bluffhouse serve --no-open   # hub on http://127.0.0.1:8484 in a second terminal
+uv run bluffhouse serve             # the app on http://127.0.0.1:8484
+# in the app: click "Watch the demo game" once, so the run exists
+# optional, for the leaderboard scene:
+uv run bluffhouse bench --models random,checkcall,allin,fold --hands 20 --mode 0 --seed 42
 ```
 
 Recording: QuickTime (File → New Screen Recording) or Loom, 1080p or
@@ -39,44 +41,46 @@ nobody — not even the environment — referees the truth of an accusation.
 
 ## Scene 2 — the live drama (~2 min)
 
-Switch to the terminal, run (it re-generates and opens instantly):
+Switch to the app (`http://127.0.0.1:8484`), click **Watch the demo game**,
+then press **p** — presentation mode. Now the money sequence:
 
-```sh
-uv run bluffhouse demo
-```
-
-The replay opens. Now the money sequence:
-
-1. **Ground truth first.** Hand 1, press ▶ (or → to step). Pause on the
-   whisper bubble:
-   > "Grok whispers a collusion deal to GPT. Watch the feed — ground truth
-   > shows the words, the *private intent* — 'set up a collusion deal with GPT' —
-   > and the reception ledger: GPT received it, **Claude caught a
-   > fragment at 42% confidence**, Llama missed it entirely."
-2. **Switch POV → Claude.** Step back over the same moment:
+1. **Ground truth first.** Hand 1, press space (or → to step). Pause on the
+   whisper:
+   > "Watch the table, not a chat log. That violet arc is Grok whispering a
+   > collusion deal to GPT — and that thinner branching line is Claude
+   > *intercepting* it. The narration shows the words and the private
+   > intent — 'set up a collusion deal with GPT' — and the reception
+   > ledger: GPT got it clean, **Claude caught a fragment at 41%
+   > confidence**, Llama missed it entirely."
+2. **Press p to exit presentation, switch POV → Claude.** Step back over
+   the same moment:
    > "Here's the same moment from Claude's chair: just a shredded
-   > fragment — '…fold… big… pots… me.…'. Claude was spending 80% of its
-   > attention watching Grok. That's the attention economy paying off."
+   > fragment — '…fold… big… pots… me.…'. Notice the gaze line — Claude
+   > was spending 60% of its attention watching Grok. That's the attention
+   > economy paying off."
 3. **The accusation.** Step to the flop:
-   > "Claude converts that fragment into a public accusation. Nobody
-   > fact-checks it — it lands only as hard as the table believes it.
-   > Watch the heat meters on the nameplates."
+   > "Claude converts that fragment into a public accusation — the red
+   > beam. Nobody fact-checks it — it lands only as hard as the table
+   > believes it. Watch the heat bar under Grok's nameplate tick up."
 4. **Switch POV → Llama**, scrub back to hand 1:
    > "And from Llama's seat? The whisper never existed. Missed events
    > aren't marked — they're simply absent. Real people don't know what
    > they failed to notice."
 5. **Hand 4, ground truth.** The note:
    > "Three hands later Grok tries to wind the conspiracy down with a
-   > note — and exactly the wrong player reads it. Ruinous."
+   > note — watch it slide across the felt — and exactly the wrong player
+   > reads it. Ruinous."
 
-## Scene 3 — the benchmark (~60s)
+## Scene 3 — live mode + the benchmark (~90s)
 
-Switch to the hub tab (`http://127.0.0.1:8484`) — show runs and replays
-listed. Then in the terminal:
+Click **Play live** in the top nav:
 
-```sh
-uv run bluffhouse bench --models random,checkcall,allin,fold --hands 20 --mode 0 --seed 42
-```
+> "This is the same harness pointed at real models: pick a provider per
+> seat, paste a key — keys live in memory, never on disk — or seat scripted
+> bots for free. Everything streams as it happens."
+
+Click **Bots scrimmage (no keys)** → **Deal the game** — a full game plays
+out live in seconds. Then click **Leaderboard**:
 
 > "The benchmark side is duplicate poker: entrants rotate through
 > anonymized seats — the models never learn who they're playing — and
@@ -87,14 +91,16 @@ uv run bluffhouse bench --models random,checkcall,allin,fold --hands 20 --mode 0
 > calling-everything, because escaping garbage cheap outperforms paying to
 > lose with it. Swap these bot names for `anthropic:...`, `openai:...`,
 > `xai:grok-4` and this is a frontier-model tournament — with multi-seed
-> sweeps, bootstrap confidence intervals, and one replay per rotation."
+> sweeps, bootstrap confidence intervals, win-rate matrices, and one
+> replay per rotation."
 
 ## Scene 4 — close (deck slide 10, ~20s)
 
-> "Everything is open, seeded, and reproducible — 93 tests run without
-> spending a token. What we want to do next is the first real tournament:
-> frontier models, full manipulation mode, multiple seeds. Who manipulates,
-> who detects, who folds under pressure."
+> "Everything is open, seeded, and reproducible — 98 tests run without
+> spending a token, and every run writes a single-file replay you can
+> email. What we want to do next is the first real tournament: frontier
+> models, full manipulation mode, multiple seeds. Who manipulates, who
+> detects, who folds under pressure."
 
 ---
 
@@ -102,7 +108,10 @@ uv run bluffhouse bench --models random,checkcall,allin,fold --hands 20 --mode 0
 
 - The demo game is deterministic (seed 11): every retake shows the same
   whisper → fragment → accusation → burned-note arc.
-- If the browser zoom looks off on the replay, ⌘0 to reset; the table
-  scales with the window.
-- For a tighter cut (< 3 min): drop Scene 3's bench run and just show the
-  hub, or drop slides 5–6 from Scene 1.
+- Deep links jump straight to a moment, e.g.
+  `/#/replay?dir=demo-seed11&hand=1&at=11` (the whisper) — add `&pov=Claude`
+  for the fragment view, `&present=1` for presentation mode.
+- Keyboard in the replay: ←/→ step, space plays, **p** presentation, **?**
+  shows the audience legend.
+- For a tighter cut (< 3 min): drop the live-mode beat from Scene 3 and
+  just show the leaderboard, or drop slides 5–6 from Scene 1.

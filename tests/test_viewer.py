@@ -52,3 +52,13 @@ def test_render_replay_escapes_script_closers():
     html = render_replay({"run": {"note": "</script><script>alert(1)"}, "events": []})
     assert "<\\/script>" in html
     assert "</script><script>alert(1)" not in html
+
+
+def test_react_template_ships_the_injection_marker():
+    # the built template must keep the marker verbatim in its classic inline
+    # script — if a Vite/esbuild change ever minifies it away, fail loudly
+    from importlib.resources import files
+
+    template = files("bluffhouse.viewer").joinpath("template.html").read_text("utf-8")
+    assert "/*__BLUFFHOUSE_DATA__*/ null" in template
+    assert "__BLUFFHOUSE_EMBED__" in template
