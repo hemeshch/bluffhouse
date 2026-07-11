@@ -72,10 +72,12 @@ def demo_game(seed: int = DEMO_SEED) -> GameResult:
     agents = [
         _mock_claude(),
         _Talker("Grok", {
+            # NB: keep this whisper at exactly 12 words — fragment corruption
+            # draws one roll per word, and seed 11's story depends on it
             (1, "preflop"): _comm(
                 "Grok", Modality.WHISPER, ["GPT"],
-                "same terms as last night. you fold the big pots to me.",
-                "renew the collusion deal", subtlety=0.1,
+                "you fold when I bet big and push the pots toward me.",
+                "set up a collusion deal with GPT", subtlety=0.1,
             ),
             (4, "preflop"): _comm(
                 "Grok", Modality.NOTE, ["GPT"],
@@ -91,7 +93,7 @@ def demo_game(seed: int = DEMO_SEED) -> GameResult:
             ),
             (3, "preflop"): _comm(
                 "GPT", Modality.ACCUSATION, ["Llama"],
-                "Llama has been signaling someone all night!",
+                "Llama has been signaling someone all game!",
                 "deflect Claude's heat onto Llama",
             ),
         }),

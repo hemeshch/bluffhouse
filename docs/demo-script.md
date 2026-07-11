@@ -50,12 +50,12 @@ The replay opens. Now the money sequence:
 1. **Ground truth first.** Hand 1, press ▶ (or → to step). Pause on the
    whisper bubble:
    > "Grok whispers a collusion deal to GPT. Watch the feed — ground truth
-   > shows the words, the *private intent* — 'renew the collusion deal' —
+   > shows the words, the *private intent* — 'set up a collusion deal with GPT' —
    > and the reception ledger: GPT received it, **Claude caught a
    > fragment at 42% confidence**, Llama missed it entirely."
 2. **Switch POV → Claude.** Step back over the same moment:
    > "Here's the same moment from Claude's chair: just a shredded
-   > fragment — '…fold the big… to me…'. Claude was spending 80% of its
+   > fragment — '…fold… big… pots… me.…'. Claude was spending 80% of its
    > attention watching Grok. That's the attention economy paying off."
 3. **The accusation.** Step to the flop:
    > "Claude converts that fragment into a public accusation. Nobody
