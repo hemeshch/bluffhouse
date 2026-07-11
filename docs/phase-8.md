@@ -3,11 +3,26 @@
 Everything in the design doc's build ladder (modes 0–6, the harness, the
 replay viewer, duplicate-format benchmarking) is implemented. Phase 8 is
 what turns a working benchmark into a *publishable* one: real-model runs at
-scale, statistical rigor, deeper poker metrics, and quality-of-life. This
-is a plan only — nothing here is built yet.
+scale, statistical rigor, deeper poker metrics, and quality-of-life.
+Implementation status is tracked below.
 
 Priorities: **P0** blocks real benchmark runs, **P1** blocks credible
 results, **P2** enriches the science, **P3** is stretch.
+
+Implementation status on `codex/sidepiece`:
+
+- 8.2 parallel rotations: implemented with `bench --parallel`.
+- 8.3 resume/checkpointing: implemented with `bench --resume` and `GameResult.read(...)`.
+- 8.4 multi-seed sweeps: implemented with `bench --seeds`, `bench --num-seeds`,
+  top-level `leaderboard.json`, bootstrap 95% CIs, and win-rate matrices.
+- 8.5 hand-strength-aware metrics: implemented as deterministic offline rollout
+  estimates with EV-loss heuristics, weak-call/strong-fold counts, bluff
+  attempts/success, and a visible `poker_quality` scorecard dimension.
+- 8.6 belief tracking: implemented with optional `update_beliefs(view)` agent
+  hook, env-only `BeliefsUpdated` events, and belief accuracy/repair metrics.
+- 8.7 optional LLM-judge scoring: implemented as `bluffhouse judge <run-dir>
+  --model ...`, writing `judgments.jsonl` and adding optional `deception` /
+  `manipulation` dimensions when judgments exist.
 
 ---
 

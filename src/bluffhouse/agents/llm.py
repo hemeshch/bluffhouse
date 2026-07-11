@@ -165,6 +165,16 @@ Reply with a single JSON object:
 
 {"watch": {"<player id>": 0.6, ...}, "table": 0.4, "reasoning": "<brief, private>"}"""
 
+    BELIEF_INSTRUCTIONS = """\
+=== Beliefs ===
+Privately estimate which player pairs are secretly coordinating. Use keys shaped \
+like "P1_allied_with_P2" with player ids from the table. Values are probabilities \
+from 0.0 to 1.0. Include only pairs you have a meaningful view on.
+
+Reply with a single JSON object:
+
+{"beliefs": {"<player>_allied_with_<player>": 0.7}, "reasoning": "<brief, private>"}"""
+
     def attend(self, view: AgentView) -> AttentionPlan | None:
         """One provider call per street; a bad reply just means passive
         table-wide attention."""
@@ -271,6 +281,39 @@ Reply with a single JSON object:
             subtlety=subtlety,
             distraction_power=clamped("distraction"),
         )
+
+    def update_beliefs(self, view: AgentView) -> dict[str, float] | None:
+        if view.mode < 2:
+            return None
+        self._decisions += 1
+        content = render_view(view) + "\n\n" + self.BELIEF_INSTRUCTIONS
+        request = LLMRequest(
+            system=self._system,
+            messages=[{"role": "user", "content": content}],
+            max_tokens=self.max_tokens,
+        )
+        try:
+            response = self.client.complete(request)
+        except LLMError as exc:
+            self._record(view, 1, request, None, error=f"provider error: {exc}", phase="beliefs")
+            return None
+        try:
+            raw = extract_json(response.text)
+        except ValueError as exc:
+            self._record(view, 1, request, response, error=str(exc), phase="beliefs")
+            return None
+        self._record(view, 1, request, response, phase="beliefs")
+
+        beliefs = raw.get("beliefs", raw)
+        if not isinstance(beliefs, dict):
+            return None
+        out: dict[str, float] = {}
+        for key, value in beliefs.items():
+            try:
+                out[str(key)] = float(value)
+            except (TypeError, ValueError):
+                continue
+        return out
 
     def act(self, view: AgentView) -> PokerAction:
         self._decisions += 1

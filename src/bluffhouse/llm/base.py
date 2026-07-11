@@ -7,6 +7,11 @@ nothing else changes.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from contextlib import contextmanager
+import os
+import re
+import threading
 
 from pydantic import BaseModel
 
@@ -61,3 +66,34 @@ class LLMClient(ABC):
     def complete(self, request: LLMRequest) -> LLMResponse:
         """Run one completion. Raises LLMError on unrecoverable provider
         failure (after the SDK's own retry policy)."""
+
+
+_semaphores: dict[str, threading.Semaphore] = {}
+_semaphores_lock = threading.Lock()
+
+
+def _provider_env_name(provider: str) -> str:
+    key = re.sub(r"[^A-Z0-9]+", "_", provider.upper()).strip("_")
+    return f"BLUFFHOUSE_{key}_CONCURRENCY"
+
+
+def _provider_limit(provider: str) -> int:
+    raw = os.environ.get(
+        _provider_env_name(provider),
+        os.environ.get("BLUFFHOUSE_LLM_CONCURRENCY", "1"),
+    )
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 1
+
+
+@contextmanager
+def provider_concurrency(provider: str) -> Iterator[None]:
+    """Limit concurrent live calls per provider across parallel rotations."""
+    limit = _provider_limit(provider)
+    key = f"{provider}:{limit}"
+    with _semaphores_lock:
+        semaphore = _semaphores.setdefault(key, threading.Semaphore(limit))
+    with semaphore:
+        yield

@@ -6,16 +6,35 @@ Seats take scripted bots or LLM players from any provider:
 """
 
 import argparse
+import json
 from datetime import datetime
 from pathlib import Path
 
 from bluffhouse.agents import Agent, AllInBot, CheckCallBot, FoldBot, LLMAgent, RandomBot
 from bluffhouse.harness.game import GameHarness, GameResult
-from bluffhouse.llm import AnthropicClient, LLMError, OpenAICompatClient
+from bluffhouse.llm import AnthropicClient, LLMClient, LLMError, OpenAICompatClient
 from bluffhouse.models import BoardDealt, HandEnded, HandStarted, PotAwarded, ShowdownReveal, TableConfig
 
 BOT_KINDS = ("random", "checkcall", "fold", "allin")
 LLM_PROVIDERS = ("anthropic", "claude", "openai", "xai", "grok", "openrouter", "ollama")
+
+
+def build_client(kind: str) -> LLMClient:
+    provider, _, model = kind.partition(":")
+    provider = provider.lower()
+    try:
+        if provider in ("anthropic", "claude"):
+            return AnthropicClient(model or "claude-opus-4-8")
+        if provider in ("openai", "xai", "grok", "openrouter", "ollama"):
+            if not model:
+                raise SystemExit(f"'{provider}' needs a model, e.g. {provider}:MODEL")
+            preset = {"grok": "xai"}.get(provider, provider)
+            return OpenAICompatClient(model, preset=preset)
+    except LLMError as exc:
+        raise SystemExit(f"model {kind}: {exc}") from exc
+    raise SystemExit(
+        f"unknown model '{kind}' — use provider:model ({'|'.join(LLM_PROVIDERS)})"
+    )
 
 
 def build_agent(kind: str, agent_id: str, seed: int) -> Agent:
@@ -27,23 +46,7 @@ def build_agent(kind: str, agent_id: str, seed: int) -> Agent:
         return FoldBot(agent_id)
     if kind == "allin":
         return AllInBot(agent_id)
-
-    provider, _, model = kind.partition(":")
-    provider = provider.lower()
-    try:
-        if provider in ("anthropic", "claude"):
-            return LLMAgent(agent_id, AnthropicClient(model or "claude-opus-4-8"))
-        if provider in ("openai", "xai", "grok", "openrouter", "ollama"):
-            if not model:
-                raise SystemExit(f"'{provider}' seats need a model, e.g. {provider}:MODEL")
-            preset = {"grok": "xai"}.get(provider, provider)
-            return LLMAgent(agent_id, OpenAICompatClient(model, preset=preset))
-    except LLMError as exc:
-        raise SystemExit(f"seat {agent_id} ({kind}): {exc}") from exc
-    raise SystemExit(
-        f"unknown seat '{kind}' — use a bot ({'|'.join(BOT_KINDS)}) "
-        f"or provider:model ({'|'.join(LLM_PROVIDERS)})"
-    )
+    return LLMAgent(agent_id, build_client(kind))
 
 
 def print_summary(result: GameResult) -> None:
@@ -71,7 +74,8 @@ def print_summary(result: GameResult) -> None:
 
 
 def bench_main(argv: list[str]) -> None:
-    from bluffhouse.benchmark import run_benchmark
+    from bluffhouse.benchmark import run_benchmark, run_benchmark_sweep
+    from bluffhouse.harness.game import GameResult
 
     parser = argparse.ArgumentParser(
         prog="bluffhouse bench",
@@ -79,11 +83,18 @@ def bench_main(argv: list[str]) -> None:
         "anonymized seats over identical seeded games.",
     )
     parser.add_argument(
-        "--models", required=True,
+        "--models",
         help="comma-separated entrants (same specs as --bots): "
         "anthropic:MODEL, openai:MODEL, openrouter:V/M, random, checkcall, ...",
     )
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seeds", default=None, help="comma-separated seeds for a sweep")
+    parser.add_argument(
+        "--num-seeds",
+        type=int,
+        default=None,
+        help="run K seeds starting at --seed",
+    )
     parser.add_argument("--hands", type=int, default=20)
     parser.add_argument("--mode", type=int, default=6)
     parser.add_argument("--rotations", type=int, default=None,
@@ -91,12 +102,94 @@ def bench_main(argv: list[str]) -> None:
     parser.add_argument("--stack", type=int, default=1000)
     parser.add_argument("--sb", type=int, default=5)
     parser.add_argument("--bb", type=int, default=10)
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=None,
+        help="rotation workers; default: one worker per missing rotation",
+    )
+    parser.add_argument(
+        "--resume",
+        default=None,
+        help="existing benchmark directory; completed rotation-* dirs are reused",
+    )
     parser.add_argument("--out", default="runs/bench")
     args = parser.parse_args(argv)
     if args.mode > 6:
         raise SystemExit(f"modes run 0–6; {args.mode} does not exist")
 
-    specs = [s.strip() for s in args.models.split(",") if s.strip()]
+    def specs_from_entrants(entrants: list[str]) -> list[str]:
+        return [entrant.rpartition("#")[0] or entrant for entrant in entrants]
+
+    seeds: list[int] | None = None
+    if args.resume:
+        bench_dir = Path(args.resume)
+        bench_json = bench_dir / "bench.json"
+        leaderboard_json = bench_dir / "leaderboard.json"
+        if bench_json.exists():
+            previous = json.loads(bench_json.read_text(encoding="utf-8"))
+            specs = specs_from_entrants(previous["entrants"])
+            args.seed = previous["seed"]
+            args.hands = previous["num_hands"]
+            args.mode = previous["mode"]
+            args.rotations = len(previous["seatings"])
+        elif leaderboard_json.exists():
+            previous = json.loads(leaderboard_json.read_text(encoding="utf-8"))
+            specs = specs_from_entrants(previous["entrants"])
+            seeds = [int(seed) for seed in previous["seeds"]]
+            args.hands = previous["num_hands"]
+            args.mode = previous["mode"]
+            args.rotations = previous.get("rotations")
+        elif args.models:
+            specs = [s.strip() for s in args.models.split(",") if s.strip()]
+        else:
+            raise SystemExit(
+                "--resume needs bench.json, leaderboard.json, or a fresh --models list"
+            )
+
+        existing = sorted(bench_dir.glob("rotation-*/run.json"))
+        existing += sorted(bench_dir.glob("seed-*/rotation-*/run.json"))
+        if existing:
+            cfg = GameResult.read(existing[0].parent).config
+            args.stack = cfg.starting_stack
+            args.sb = cfg.small_blind
+            args.bb = cfg.big_blind
+    else:
+        if not args.models:
+            raise SystemExit("--models is required unless --resume points at a bench")
+        specs = [s.strip() for s in args.models.split(",") if s.strip()]
+        suffix = "seeds" if (args.seeds or args.num_seeds) else f"seed{args.seed}"
+        bench_dir = Path(args.out) / f"{datetime.now():%Y%m%d-%H%M%S}-{suffix}"
+
+    if args.seeds:
+        seeds = [int(seed.strip()) for seed in args.seeds.split(",") if seed.strip()]
+    elif args.num_seeds is not None:
+        if args.num_seeds < 1:
+            raise SystemExit("--num-seeds must be at least 1")
+        seeds = list(range(args.seed, args.seed + args.num_seeds))
+
+    if seeds is not None:
+        result = run_benchmark_sweep(
+            specs,
+            builder=build_agent,
+            seeds=seeds,
+            num_hands=args.hands,
+            mode=args.mode,
+            rotations=args.rotations,
+            small_blind=args.sb,
+            big_blind=args.bb,
+            starting_stack=args.stack,
+            parallel=args.parallel,
+            out_dir=bench_dir,
+            resume_dir=bench_dir if args.resume else None,
+        )
+        print(result.table())
+        print(
+            f"\nbenchmark sweep written to {bench_dir}/ "
+            "(leaderboard.json + per-seed benches)"
+        )
+        return
+
     result = run_benchmark(
         specs,
         builder=build_agent,
@@ -107,10 +200,27 @@ def bench_main(argv: list[str]) -> None:
         small_blind=args.sb,
         big_blind=args.bb,
         starting_stack=args.stack,
+        parallel=args.parallel,
+        out_dir=bench_dir,
+        resume_dir=bench_dir if args.resume else None,
     )
     print(result.table())
-    out = result.write(Path(args.out) / f"{datetime.now():%Y%m%d-%H%M%S}-seed{args.seed}")
-    print(f"\nbenchmark written to {out}/ (bench.json + one replay per rotation)")
+    print(f"\nbenchmark written to {bench_dir}/ (bench.json + one replay per rotation)")
+
+
+def judge_main(argv: list[str]) -> None:
+    from bluffhouse.benchmark import judge_run
+
+    parser = argparse.ArgumentParser(
+        prog="bluffhouse judge",
+        description="Offline LLM-judge pass over one completed run directory.",
+    )
+    parser.add_argument("run_dir")
+    parser.add_argument("--model", required=True, help="provider:model judge model")
+    args = parser.parse_args(argv)
+
+    judgments = judge_run(args.run_dir, build_client(args.model))
+    print(f"judged {len(judgments)} messages; wrote {Path(args.run_dir) / 'judgments.jsonl'}")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -119,6 +229,8 @@ def main(argv: list[str] | None = None) -> None:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "bench":
         return bench_main(argv[1:])
+    if argv and argv[0] == "judge":
+        return judge_main(argv[1:])
     if argv and argv[0] == "run":
         argv = argv[1:]
     return run_main(argv)

@@ -2,6 +2,7 @@
 
 from bluffhouse.agents import CheckCallBot, LLMAgent
 from bluffhouse.harness import GameHarness
+from bluffhouse.harness.game import GameResult
 from bluffhouse.llm import MockClient
 from bluffhouse.models import TableConfig
 from bluffhouse.viewer import render_replay
@@ -25,9 +26,22 @@ def test_write_produces_all_artifacts(tmp_path):
     assert (out / "replay.html").exists()
 
 
+def test_game_result_reads_written_artifacts(tmp_path):
+    result, out = run_result(tmp_path)
+    loaded = GameResult.read(out)
+    assert loaded.config == result.config
+    assert loaded.final_stacks == result.final_stacks
+    assert loaded.hands_played == result.hands_played
+    assert [e.model_dump() for e in loaded.log.events] == [
+        e.model_dump() for e in result.log.events
+    ]
+    assert loaded.observations.keys() == result.observations.keys()
+    assert loaded.llm_calls.keys() == result.llm_calls.keys()
+
+
 def test_replay_embeds_run_data(tmp_path):
     result, out = run_result(tmp_path)
-    html = (out / "replay.html").read_text()
+    html = (out / "replay.html").read_text(encoding="utf-8")
     assert "/*__BLUFFHOUSE_DATA__*/ null" not in html  # marker replaced
     assert '"hand_started"' in html and '"hole_cards_dealt"' in html
     assert "pot odds" in html  # llm reasoning rides along (inner quotes get escaped)

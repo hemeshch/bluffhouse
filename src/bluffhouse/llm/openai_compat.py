@@ -7,7 +7,13 @@ import time
 
 import openai
 
-from bluffhouse.llm.base import LLMClient, LLMError, LLMRequest, LLMResponse
+from bluffhouse.llm.base import (
+    LLMClient,
+    LLMError,
+    LLMRequest,
+    LLMResponse,
+    provider_concurrency,
+)
 
 # preset -> (base_url, api_key_env). base_url None = the SDK's default (OpenAI).
 PRESETS: dict[str, tuple[str | None, str | None]] = {
@@ -34,6 +40,7 @@ class OpenAICompatClient(LLMClient):
         resolved_key = api_key or (os.environ.get(key_env) if key_env else None)
         if key_env is not None and resolved_key is None:
             raise LLMError(f"no API key for '{preset}' — set {key_env}")
+        self.provider = preset
         self._client = openai.OpenAI(
             base_url=base_url or preset_url,
             api_key=resolved_key or "unused",  # key-less local servers (ollama, vllm)
@@ -44,11 +51,12 @@ class OpenAICompatClient(LLMClient):
         messages = [{"role": "system", "content": request.system}, *request.messages]
         start = time.monotonic()
         try:
-            response = self._client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=request.max_tokens,
-            )
+            with provider_concurrency(self.provider):
+                response = self._client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=request.max_tokens,
+                )
         except openai.OpenAIError as exc:
             raise LLMError(f"openai-compat ({self.model}): {exc}") from exc
         latency = time.monotonic() - start

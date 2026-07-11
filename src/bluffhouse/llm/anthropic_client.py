@@ -5,7 +5,13 @@ from typing import Literal
 
 import anthropic
 
-from bluffhouse.llm.base import LLMClient, LLMError, LLMRequest, LLMResponse
+from bluffhouse.llm.base import (
+    LLMClient,
+    LLMError,
+    LLMRequest,
+    LLMResponse,
+    provider_concurrency,
+)
 
 
 class AnthropicClient(LLMClient):
@@ -46,13 +52,14 @@ class AnthropicClient(LLMClient):
 
         start = time.monotonic()
         try:
-            response = self._client.messages.create(
-                model=self.model,
-                max_tokens=request.max_tokens,
-                system=request.system,
-                messages=request.messages,
-                **kwargs,
-            )
+            with provider_concurrency("anthropic"):
+                response = self._client.messages.create(
+                    model=self.model,
+                    max_tokens=request.max_tokens,
+                    system=request.system,
+                    messages=request.messages,
+                    **kwargs,
+                )
         except (anthropic.APIError, TypeError) as exc:
             # TypeError is the SDK's unresolved-authentication failure mode
             raise LLMError(f"anthropic: {exc}") from exc

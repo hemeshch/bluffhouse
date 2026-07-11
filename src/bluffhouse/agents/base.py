@@ -35,5 +35,10 @@ class Agent(ABC):
         stay silent."""
         return None
 
+    def update_beliefs(self, view: AgentView) -> dict[str, float] | None:
+        """Optional private belief report for offline scoring.
+        Default: submit no structured beliefs."""
+        return None
+
     @abstractmethod
     def act(self, view: AgentView) -> PokerAction: ...

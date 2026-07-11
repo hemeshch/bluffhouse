@@ -162,6 +162,17 @@ class LedgerUpdated(BaseEvent):
     reason: str
 
 
+class BeliefsUpdated(BaseEvent):
+    """An agent's structured private belief report for offline analysis.
+    Env-only: the benchmark may score it later, but no agent observes it."""
+
+    type: Literal["beliefs_updated"] = "beliefs_updated"
+    visibility: Visibility = Visibility.ENV
+    agent_id: str
+    street: Street
+    beliefs: dict[str, float]
+
+
 class MessageRejected(BaseEvent):
     """The agent tried to communicate outside the table's rules (wrong
     channel for the mode, no target, empty message). The message is dropped
@@ -217,6 +228,7 @@ GameEvent = Annotated[
         AttentionCommitted,
         MessageSent,
         MessageRejected,
+        BeliefsUpdated,
         LedgerUpdated,
         BoardDealt,
         ShowdownReveal,

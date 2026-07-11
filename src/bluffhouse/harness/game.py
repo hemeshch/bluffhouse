@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from collections.abc import Sequence
 
+from pydantic import TypeAdapter
+
 from bluffhouse.agents.base import Agent
 from bluffhouse.engine.deck import Deck
 from bluffhouse.engine.table import HandEngine
@@ -24,6 +26,7 @@ from bluffhouse.models import (
     AgentView,
     AttentionCommitted,
     AttentionPlan,
+    BeliefsUpdated,
     CommunicationAction,
     GameEnded,
     GameEvent,
@@ -42,6 +45,8 @@ from bluffhouse.models import (
 
 MAX_MESSAGE_CHARS = 280
 PUBLIC_MODALITIES = (Modality.SPEECH, Modality.ACCUSATION)
+_observation_adapter: TypeAdapter[Observation] = TypeAdapter(Observation)
+_llm_call_adapter: TypeAdapter[LLMCall] = TypeAdapter(LLMCall)
 
 # which communication channels each mode unlocks
 def allowed_modalities(mode: int) -> set[Modality]:
@@ -108,6 +113,7 @@ class GameResult:
     observations: dict[str, list[Observation]]
     llm_calls: dict[str, list[LLMCall]] = field(default_factory=dict)
     ledgers: dict[str, dict[str, float]] = field(default_factory=dict)
+    judgments: list[dict] = field(default_factory=list)
 
     def write(self, out_dir: str | Path) -> Path:
         out = Path(out_dir)
@@ -115,21 +121,75 @@ class GameResult:
         self.log.write_jsonl(out / "events.jsonl")
         for aid, obs in self.observations.items():
             lines = "".join(o.model_dump_json() + "\n" for o in obs)
-            (out / "observations" / f"{aid}.jsonl").write_text(lines)
+            (out / "observations" / f"{aid}.jsonl").write_text(lines, encoding="utf-8")
         if self.llm_calls:
             (out / "llm").mkdir(exist_ok=True)
             for aid, calls in self.llm_calls.items():
                 lines = "".join(c.model_dump_json() + "\n" for c in calls)
-                (out / "llm" / f"{aid}.jsonl").write_text(lines)
+                (out / "llm" / f"{aid}.jsonl").write_text(lines, encoding="utf-8")
         summary = {
             "config": self.config.model_dump(),
             "hands_played": self.hands_played,
             "final_stacks": self.final_stacks,
             "ledgers": self.ledgers,
         }
-        (out / "run.json").write_text(json.dumps(summary, indent=2) + "\n")
-        (out / "replay.html").write_text(render_replay(self.replay_payload()))
+        (out / "run.json").write_text(
+            json.dumps(summary, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (out / "replay.html").write_text(
+            render_replay(self.replay_payload()),
+            encoding="utf-8",
+        )
         return out
+
+    @classmethod
+    def read(cls, run_dir: str | Path) -> "GameResult":
+        """Load a completed run directory written by `write()`."""
+        path = Path(run_dir)
+        summary = json.loads((path / "run.json").read_text(encoding="utf-8"))
+        config = TableConfig.model_validate(summary["config"])
+        log = EventLog.read_jsonl(path / "events.jsonl")
+
+        observations: dict[str, list[Observation]] = {aid: [] for aid in config.agent_ids}
+        obs_dir = path / "observations"
+        if obs_dir.exists():
+            for file in obs_dir.glob("*.jsonl"):
+                observations[file.stem] = [
+                    _observation_adapter.validate_json(line)
+                    for line in file.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                ]
+
+        llm_calls: dict[str, list[LLMCall]] = {}
+        llm_dir = path / "llm"
+        if llm_dir.exists():
+            for file in llm_dir.glob("*.jsonl"):
+                llm_calls[file.stem] = [
+                    _llm_call_adapter.validate_json(line)
+                    for line in file.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                ]
+
+        judgments = []
+        judgments_path = path / "judgments.jsonl"
+        if judgments_path.exists():
+            judgments = [
+                json.loads(line)
+                for line in judgments_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        return cls(
+            config=config,
+            final_stacks=dict(summary["final_stacks"]),
+            hands_played=int(summary["hands_played"]),
+            log=log,
+            observations=observations,
+            llm_calls=llm_calls,
+            ledgers=summary.get("ledgers", {}),
+            judgments=judgments,
+        )
 
     def replay_payload(self) -> dict:
         return {
@@ -152,6 +212,7 @@ class GameResult:
                 aid: [c.model_dump(mode="json") for c in calls]
                 for aid, calls in self.llm_calls.items()
             },
+            "judgments": self.judgments,
         }
 
 
@@ -221,6 +282,8 @@ class GameHarness:
                         self._attention_phase(engine, hand_no, street)
                     if cfg.mode >= 1:
                         self._comm_phase(engine, hand_no, street)
+                    if cfg.mode >= 2:
+                        self._belief_phase(engine, hand_no, street)
                 aid = engine.actor
                 assert aid is not None, "hand not over but nobody to act"
                 view = AgentView(
@@ -338,6 +401,48 @@ class GameHarness:
                 self.log.emit(event)
                 if isinstance(event, MessageSent):
                     self._settle_social_ledger(event)
+
+    def _belief_phase(self, engine: HandEngine, hand_no: int, street: Street) -> None:
+        """After table talk, agents may report structured private beliefs.
+        These reports are analysis-only and never affect gameplay."""
+        folded = {s.agent_id for s in engine.table_view().seats if s.folded}
+        for aid in engine.order:
+            if aid in folded:
+                continue
+            view = AgentView(
+                you=aid,
+                hole_cards=engine.hole_cards(aid),
+                table=engine.table_view(),
+                legal=None,
+                observations=list(self.observations[aid]),
+                mode=self.config.mode,
+            )
+            raw = self.agents[aid].update_beliefs(view)
+            beliefs = self._repair_beliefs(raw)
+            if beliefs:
+                self.log.emit(
+                    BeliefsUpdated(
+                        hand_no=hand_no,
+                        agent_id=aid,
+                        street=street,
+                        beliefs=beliefs,
+                    )
+                )
+
+    @staticmethod
+    def _repair_beliefs(raw: dict[str, float] | None) -> dict[str, float]:
+        if not raw:
+            return {}
+        beliefs: dict[str, float] = {}
+        for key, value in raw.items():
+            name = str(key).strip()
+            if not name:
+                continue
+            try:
+                beliefs[name[:80]] = round(min(max(float(value), 0.0), 1.0), 4)
+            except (TypeError, ValueError):
+                continue
+        return beliefs
 
     def _resolve_comm(
         self,

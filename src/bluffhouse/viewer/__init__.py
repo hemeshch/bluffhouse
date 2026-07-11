@@ -10,7 +10,9 @@ _MARKER = "/*__BLUFFHOUSE_DATA__*/ null"
 
 
 def render_replay(payload: dict) -> str:
-    template = (resources.files("bluffhouse.viewer") / "template.html").read_text()
+    template = (
+        resources.files("bluffhouse.viewer") / "template.html"
+    ).read_text(encoding="utf-8")
     if _MARKER not in template:
         raise RuntimeError("viewer template is missing its data marker")
     # "</" would terminate the surrounding <script> tag mid-JSON

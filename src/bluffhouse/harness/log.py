@@ -35,12 +35,12 @@ class EventLog:
         return "".join(e.model_dump_json() + "\n" for e in self.events)
 
     def write_jsonl(self, path: str | Path) -> None:
-        Path(path).write_text(self.to_jsonl())
+        Path(path).write_text(self.to_jsonl(), encoding="utf-8")
 
     @classmethod
     def read_jsonl(cls, path: str | Path) -> "EventLog":
         log = cls()
-        for line in Path(path).read_text().splitlines():
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
             if line.strip():
                 log.events.append(_event_adapter.validate_json(line))
         return log
