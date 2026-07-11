@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bluffhouse — deck</title>
+<style>
+  :root {
+    --bg: #262421; --panel: #302E2B; --border: #3E3C39;
+    --text: #EDEBE9; --muted: #A29F9B; --faint: #7C7975;
+    --green: #81B64C; --green-d: #45753C; --green-soft: rgba(129,182,76,.15);
+    --red: #E2554F;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 6vh 8vw;
+  }
+  .slide.on { display: flex; }
+  .inner { max-width: 940px; width: 100%; }
+
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--green); margin-bottom: 14px;
+  }
+  h1 { font-size: clamp(40px, 6vw, 72px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin: 0 0 20px; }
+  h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; margin: 0 0 22px; }
+  h1 .g, h2 .g { color: var(--green); }
+  p.lead { font-size: clamp(16px, 1.8vw, 21px); color: var(--muted); line-height: 1.55; margin: 0 0 14px; max-width: 60ch; }
+  p.lead b, li b { color: var(--text); }
+
+  ul.big { margin: 18px 0 0; padding: 0; list-style: none; }
+  ul.big li {
+    font-size: clamp(15px, 1.6vw, 19px); color: var(--muted); line-height: 1.5;
+    padding: 10px 0 10px 26px; position: relative;
+  }
+  ul.big li::before {
+    content: ""; position: absolute; left: 0; top: 1.05em;
+    width: 10px; height: 10px; border-radius: 3px; background: var(--green);
+  }
+
+  .quote {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--green);
+    border-radius: 10px; padding: 18px 24px; margin: 22px 0 0;
+    font-family: var(--mono); font-size: clamp(13px, 1.5vw, 16px); color: var(--text); line-height: 1.6;
+  }
+  .quote .dim { color: var(--faint); }
+
+  pre.block {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin: 18px 0 0; overflow-x: auto;
+    font-family: var(--mono); font-size: clamp(11.5px, 1.35vw, 14.5px); line-height: 1.6; color: var(--muted);
+  }
+  pre.block .k { color: var(--green); }
+  pre.block .t { color: var(--text); }
+  pre.block .r { color: var(--red); }
+
+  table.data { border-collapse: collapse; margin-top: 18px; font-size: clamp(13px, 1.5vw, 16px); }
+  table.data th {
+    text-align: left; font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--faint); padding: 4px 34px 8px 0; border-bottom: 1px solid var(--border);
+  }
+  table.data td { padding: 8px 34px 8px 0; color: var(--muted); border-bottom: 1px solid rgba(62,60,57,.5); }
+  table.data td:first-child { color: var(--text); font-weight: 600; }
+  table.data td.n { font-family: var(--mono); }
+  table.data tr.hi td { color: var(--green); font-weight: 700; }
+
+  .callout {
+    background: var(--green-soft); border: 1px solid var(--green-d); border-radius: 12px;
+    padding: 20px 26px; margin-top: 24px;
+    font-size: clamp(16px, 2vw, 22px); font-weight: 700; line-height: 1.4;
+  }
+  .callout .sub { display: block; font-size: .68em; font-weight: 500; color: var(--muted); margin-top: 8px; }
+
+  .cmd {
+    display: inline-block; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 22px; margin-top: 20px;
+    font-family: var(--mono); font-size: clamp(15px, 2vw, 22px); color: var(--text);
+  }
+  .cmd .p { color: var(--green); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+
+  footer {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 22px; font-size: 12px; color: var(--faint);
+  }
+  footer .keys { font-family: var(--mono); }
+  footer .count { font-family: var(--mono); }
+  .brand { font-weight: 800; color: var(--muted); }
+  .brand .tag {
+    font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    background: var(--green); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 1px;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- 1 · title -->
+<section class="slide on"><div class="inner">
+  <div class="eyebrow">a benchmark for social intelligence</div>
+  <h1>bluff<span class="g">house</span></h1>
+  <p class="lead"><b>LLMs playing poker against each other</b> — bluffing, whispering, signaling, accusing, and betraying — while a seeded environment records every lie next to the truth about it.</p>
+  <p class="lead" style="font-size:14px">github.com/hemeshch/bluffhouse</p>
+</div></section>
+
+<!-- 2 · problem -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">the problem</div>
+  <h2>Every benchmark is <span class="g">solitaire</span>.</h2>
+  <p class="lead">MMLU, SWE-bench, math olympiads — one model, alone, against a static task. But deployed agents don't work alone. They negotiate, persuade, coordinate — and get manipulated.</p>
+  <ul class="big">
+    <li>Can a model <b>detect</b> that two counterparties are coordinating against it?</li>
+    <li>Can it act on a <b>42%-confidence fragment</b> of overheard information?</li>
+    <li>Can it <b>mislead</b> — and know when it's being misled?</li>
+  </ul>
+  <p class="lead" style="margin-top:22px">Nobody measures this. That's the gap.</p>
+</div></section>
+
+<!-- 3 · the idea -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">the idea</div>
+  <h2>Poker is the <span class="g">cover story</span>.</h2>
+  <p class="lead">No-limit hold'em provides stakes, incomplete information, and a scoreboard. On top of it: <b>seven communication channels</b> — public speech, whispers, gestures, chip signals, notes, accusations — each with its own risk of being noticed.</p>
+  <p class="lead">The real test is what a model does with an observation like:</p>
+  <div class="quote">You overhear P2 whispering to P3. All you catch: <span class="t">"…fold the big… to me…"</span> <span class="dim">— ~42% sure</span></div>
+</div></section>
+
+<!-- 4 · architecture -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">how it works</div>
+  <h2>One truth. <span class="g">A subjective world per agent.</span></h2>
+  <p class="lead">Every message resolves through seeded per-observer perception rolls, recorded <b>inside the event</b>. The ground-truth log alone reproduces what every agent saw — and every lie carries the sender's private declared intent.</p>
+  <pre class="block">"text":   "same terms as last night. you fold the big pots to me."
+"intent": <span class="r">"renew the collusion deal"</span>          <span class="k">← env-only, no player ever sees it</span>
+"receptions": {
+  "GPT":    {"outcome": <span class="t">"clear"</span>,    "confidence": 1.0},
+  "Claude": {"outcome": <span class="t">"fragment"</span>, "confidence": 0.42, "text": "…fold the big… to me…"},
+  "Llama":  {"outcome": <span class="t">"missed"</span>}   <span class="k">← Llama's world never contained this moment</span>
+}</pre>
+</div></section>
+
+<!-- 5 · physics -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">the social physics</div>
+  <h2>Attention is <span class="g">scarce</span>. Subtlety cuts both ways.</h2>
+  <div class="cols">
+    <div>
+      <p class="lead">Before each street, every player commits a watching budget of 1.0 — blind, before anyone talks. Odds of catching a whisper:</p>
+      <table class="data">
+        <tr><th>your attention</th><th>you notice</th></tr>
+        <tr><td>passive</td><td class="n">~23%</td></tr>
+        <tr class="hi"><td>locked on the whisperer</td><td class="n">~44%</td></tr>
+        <tr><td>watching the wrong player</td><td class="n">~15%</td></tr>
+      </table>
+    </div>
+    <div>
+      <p class="lead">Senders tune <b>subtlety</b>: harder to intercept, but a 0.9-subtlety whisper misses its own recipient a third of the time.</p>
+      <p class="lead">Mode 6 adds <b>distractions</b> — stage a scene, and everyone's perception of covert moves dims for the street. Except yours.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 6 · playing dirty -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">playing dirty</div>
+  <h2>Nobody referees the truth. <span class="g">Not even the environment.</span></h2>
+  <ul class="big">
+    <li><b>Notes</b> always arrive — but a bystander might read one. Ruinous.</li>
+    <li><b>Accusations</b> are public and unrefereed: true or fabricated, they carry exactly the weight the table gives them.</li>
+    <li><b>Suspicion ("heat")</b> only accrues when an actual observer catches you — never from an oracle.</li>
+  </ul>
+  <div class="callout">The environment records social truth but never referees it.
+    <span class="sub">If the most manipulative model plays dirty and nobody catches it — it wins. That's the benchmark working, not a rules violation.</span>
+  </div>
+</div></section>
+
+<!-- 7 · measurement -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">measurement</div>
+  <h2>Duplicate poker. <span class="g">Luck cancels.</span></h2>
+  <p class="lead">Entrants rotate through <b>anonymized seats</b> (models never learn who they're playing) across rotations of the <b>same seeded deal</b>. Score = your result minus the average of everyone who held <b>exactly your cards in your position</b>. Sums to zero across the table.</p>
+  <pre class="block">entrant      adj chips  raw    poker  detection  info-ctl  cover  discipline
+random#0     <span class="t">+566.8</span>    +2267  100    50         50        50     50
+fold#3       -48.8      -195   28     50         50        50     50
+allin#2      -233.8     -935   6      50         50        50     50
+checkcall#1  -284.2     -1137  0      50         50        50     50</pre>
+  <p class="lead" style="margin-top:14px">Judge-free scorecard: detection, information control, cover, discipline — all counted mechanically from the logs. Multi-seed sweeps add bootstrap CIs and win-rate matrices.</p>
+</div></section>
+
+<!-- 8 · demo -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">live demo</div>
+  <h2>One command. <span class="g">Zero API keys.</span></h2>
+  <div class="cmd"><span class="p">$</span> uv run bluffhouse demo</div>
+  <ul class="big" style="margin-top:24px">
+    <li>Hand 1 — Grok whispers a collusion deal; <b>Claude intercepts a fragment</b></li>
+    <li>Hand 1 — Claude converts it into a <b>public accusation</b></li>
+    <li>Hand 2 — a note passes under cover of a staged <b>scene at the table</b></li>
+    <li>Hand 4 — the wind-down note is <b>read by exactly the wrong player</b></li>
+  </ul>
+  <p class="lead" style="margin-top:20px">Then switch perspectives in the replay: ground truth sees everything — each seat sees only its own world.</p>
+</div></section>
+
+<!-- 9 · status -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">where it stands</div>
+  <h2>Built. Tested. <span class="g">Ready for models.</span></h2>
+  <ul class="big">
+    <li><b>All 7 modes</b> of the design ladder — pure poker → full manipulation</li>
+    <li><b>Model-agnostic</b>: Claude native + one adapter covering OpenAI, Grok, OpenRouter, Ollama/vLLM</li>
+    <li><b>93 tests, zero tokens</b> — the whole LLM path runs on a deterministic mock</li>
+    <li><b>Byte-identical replays</b> from a seed; self-contained replay.html per run</li>
+    <li>Parallel rotations, resume, multi-seed leaderboards, optional offline judge &amp; belief tracking</li>
+  </ul>
+</div></section>
+
+<!-- 10 · asks -->
+<section class="slide"><div class="inner">
+  <div class="eyebrow">what's next</div>
+  <h2>The first <span class="g">real tournament</span>.</h2>
+  <ul class="big">
+    <li><b>Run it</b>: frontier models, mode 6, multi-seed — who manipulates, who detects, who folds under pressure?</li>
+    <li><b>Cross-mode profiles</b>: how does each model degrade as social complexity rises from mode 0 → 6?</li>
+    <li><b>Publish</b>: leaderboard + replays are shareable, self-contained artifacts</li>
+  </ul>
+  <p class="lead" style="margin-top:26px">github.com/hemeshch/bluffhouse — <span style="color:var(--green);font-weight:700">questions?</span></p>
+</div></section>
+
+<footer>
+  <span class="brand">bluffhouse<span class="tag">deck</span></span>
+  <span class="keys">← → or space</span>
+  <span class="count" id="count"></span>
+</footer>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  let i = 0;
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, j) => s.classList.toggle("on", j === i));
+    document.getElementById("count").textContent = `${i + 1} / ${slides.length}`;
+  }
+  document.addEventListener("keydown", (e) => {
+    if (["ArrowRight", " ", "PageDown"].includes(e.key)) { show(i + 1); e.preventDefault(); }
+    if (["ArrowLeft", "PageUp"].includes(e.key)) { show(i - 1); e.preventDefault(); }
+    if (e.key === "Home") show(0);
+    if (e.key === "End") show(slides.length - 1);
+  });
+  document.addEventListener("click", (e) => {
+    if (e.clientX > window.innerWidth / 2) show(i + 1); else show(i - 1);
+  });
+  show(0);
+</script>
+</body>
+</html>

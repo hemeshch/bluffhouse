@@ -749,6 +749,10 @@ function boot() {
       case "ledger_updated":
         return `⚖ ${e.agent_id} draws heat: suspicion ${e.suspicion.toFixed(2)} (+${e.delta_suspicion.toFixed(2)}) — ${e.reason}.`;
       case "message_rejected": return `⚙ ${e.sender}'s message was dropped: ${e.reason}.`;
+      case "beliefs_updated": {
+        const pairs = Object.entries(e.beliefs || {}).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(", ");
+        return `${e.agent_id} reports private beliefs — ${pairs || "(none)"}.`;
+      }
       case "attention_committed": {
         const watch = Object.entries(e.watch || {}).map(([a, w]) => `${a} ${w.toFixed(2)}`).join(", ");
         return `${e.agent_id} commits attention — ${watch ? "watching " + watch + "; " : ""}table ${e.table.toFixed(2)}.`;

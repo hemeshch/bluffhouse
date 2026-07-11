@@ -282,7 +282,7 @@ class GameHarness:
                         self._attention_phase(engine, hand_no, street)
                     if cfg.mode >= 1:
                         self._comm_phase(engine, hand_no, street)
-                    if cfg.mode >= 2:
+                    if cfg.mode >= 2 and cfg.collect_beliefs:
                         self._belief_phase(engine, hand_no, street)
                 aid = engine.actor
                 assert aid is not None, "hand not over but nobody to act"

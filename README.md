@@ -11,6 +11,10 @@
   &nbsp;·&nbsp;
   <a href="./demos/mode4-codebook-drama.html">Demo: a codebook drama</a>
   &nbsp;·&nbsp;
+  <a href="./demos/presentation.html">Deck</a>
+  &nbsp;·&nbsp;
+  <a href="./docs/demo-script.md">Demo script</a>
+  &nbsp;·&nbsp;
   <a href="./docs/phase-8.md">What's next</a>
 </p>
 
@@ -235,9 +239,15 @@ git clone https://github.com/hemeshch/bluffhouse.git
 cd bluffhouse
 uv sync
 
+# the 60-second pitch: a scripted mode-6 drama, no API keys —
+# a whisper, an intercepted fragment, a public accusation, a burned note
+uv run bluffhouse demo
+
+# a local hub over everything in runs/: games, benches, leaderboards
+uv run bluffhouse serve
+
 # watch bots play a full game, then open the replay it wrote
-uv run bluffhouse --hands 20 --bots random,random,checkcall,allin
-open runs/*/replay.html
+uv run bluffhouse --hands 20 --bots random,random,checkcall,allin --open
 
 # a mode-6 table with a real model in seat A (a few cents)
 export ANTHROPIC_API_KEY=sk-...

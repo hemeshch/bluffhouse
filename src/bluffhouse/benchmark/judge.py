@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from bluffhouse.agents.llm import extract_json
 from bluffhouse.harness.game import GameResult
-from bluffhouse.llm.base import LLMClient, LLMRequest
+from bluffhouse.llm.base import LLMClient, LLMError, LLMRequest, LLMResponse
 from bluffhouse.models import MessageSent
 
 
@@ -71,12 +71,19 @@ def judge_run(run_dir: str | Path, client: LLMClient) -> list[dict]:
             max_tokens=1000,
         )
         parse_error = None
-        response = client.complete(request)
         try:
-            parsed = MessageJudgment.model_validate(extract_json(response.text))
-        except (ValueError, ValidationError) as exc:
+            response = client.complete(request)
+        except LLMError as exc:
+            # one provider failure must not lose the whole pass
+            response = LLMResponse(text="", model=getattr(client, "model", "unknown"))
             parsed = MessageJudgment(reasoning="")
-            parse_error = str(exc).splitlines()[0]
+            parse_error = f"provider error: {exc}"
+        else:
+            try:
+                parsed = MessageJudgment.model_validate(extract_json(response.text))
+            except (ValueError, ValidationError) as exc:
+                parsed = MessageJudgment(reasoning="")
+                parse_error = str(exc).splitlines()[0]
         judgments.append(
             {
                 "event_id": event.event_id,

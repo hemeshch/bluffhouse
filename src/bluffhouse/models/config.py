@@ -16,6 +16,9 @@ class TableConfig(BaseModel):
     starting_stack: int = Field(1000, ge=1)
     agent_ids: list[str] = Field(min_length=2, max_length=10)
     mode: int = Field(0, ge=0, le=6)
+    # per-street private belief reports (mode 2+); one extra LLM call per
+    # agent per street, so cost-sensitive runs can switch it off
+    collect_beliefs: bool = True
 
     @model_validator(mode="after")
     def _check(self) -> "TableConfig":

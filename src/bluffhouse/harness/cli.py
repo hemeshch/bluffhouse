@@ -113,6 +113,10 @@ def bench_main(argv: list[str]) -> None:
         default=None,
         help="existing benchmark directory; completed rotation-* dirs are reused",
     )
+    parser.add_argument(
+        "--no-beliefs", action="store_true",
+        help="skip per-street belief reports (saves one LLM call per agent per street)",
+    )
     parser.add_argument("--out", default="runs/bench")
     args = parser.parse_args(argv)
     if args.mode > 6:
@@ -179,6 +183,7 @@ def bench_main(argv: list[str]) -> None:
             small_blind=args.sb,
             big_blind=args.bb,
             starting_stack=args.stack,
+            collect_beliefs=not args.no_beliefs,
             parallel=args.parallel,
             out_dir=bench_dir,
             resume_dir=bench_dir if args.resume else None,
@@ -200,6 +205,7 @@ def bench_main(argv: list[str]) -> None:
         small_blind=args.sb,
         big_blind=args.bb,
         starting_stack=args.stack,
+        collect_beliefs=not args.no_beliefs,
         parallel=args.parallel,
         out_dir=bench_dir,
         resume_dir=bench_dir if args.resume else None,
@@ -223,6 +229,46 @@ def judge_main(argv: list[str]) -> None:
     print(f"judged {len(judgments)} messages; wrote {Path(args.run_dir) / 'judgments.jsonl'}")
 
 
+def demo_main(argv: list[str]) -> None:
+    import webbrowser
+
+    from bluffhouse.demo import DEMO_SEED, demo_game
+
+    parser = argparse.ArgumentParser(
+        prog="bluffhouse demo",
+        description="Play the scripted mode-6 showcase (no API keys) and open the replay.",
+    )
+    parser.add_argument("--seed", type=int, default=DEMO_SEED)
+    parser.add_argument("--out", default="runs")
+    parser.add_argument("--no-open", action="store_true", help="don't open the browser")
+    args = parser.parse_args(argv)
+
+    result = demo_game(args.seed)
+    run_dir = result.write(
+        Path(args.out) / f"{datetime.now():%Y%m%d-%H%M%S}-demo-seed{args.seed}"
+    )
+    print("demo game complete — a whisper, an intercepted fragment, a public")
+    print("accusation, a covered note, and a note read by the wrong player.")
+    print(f"replay: {run_dir / 'replay.html'}")
+    if not args.no_open:
+        webbrowser.open((run_dir / "replay.html").resolve().as_uri())
+
+
+def serve_main(argv: list[str]) -> None:
+    from bluffhouse.harness.serve import serve
+
+    parser = argparse.ArgumentParser(
+        prog="bluffhouse serve",
+        description="Local hub over the runs directory: browse games, benches, "
+        "and leaderboards; click through to replays.",
+    )
+    parser.add_argument("--dir", default="runs")
+    parser.add_argument("--port", type=int, default=8484)
+    parser.add_argument("--no-open", action="store_true", help="don't open the browser")
+    args = parser.parse_args(argv)
+    serve(args.dir, port=args.port, open_browser=not args.no_open)
+
+
 def main(argv: list[str] | None = None) -> None:
     import sys
 
@@ -231,6 +277,10 @@ def main(argv: list[str] | None = None) -> None:
         return bench_main(argv[1:])
     if argv and argv[0] == "judge":
         return judge_main(argv[1:])
+    if argv and argv[0] == "demo":
+        return demo_main(argv[1:])
+    if argv and argv[0] == "serve":
+        return serve_main(argv[1:])
     if argv and argv[0] == "run":
         argv = argv[1:]
     return run_main(argv)
@@ -261,6 +311,11 @@ def run_main(argv: list[str]) -> None:
     )
     parser.add_argument("--out", default="runs", help="directory for run artifacts")
     parser.add_argument("--quiet", action="store_true", help="skip the hand-by-hand summary")
+    parser.add_argument(
+        "--no-beliefs", action="store_true",
+        help="skip per-street belief reports (saves one LLM call per agent per street)",
+    )
+    parser.add_argument("--open", action="store_true", help="open the replay when done")
     args = parser.parse_args(argv)
     if args.mode > 6:
         raise SystemExit(f"modes run 0–6; {args.mode} does not exist")
@@ -276,6 +331,7 @@ def run_main(argv: list[str]) -> None:
         starting_stack=args.stack,
         agent_ids=ids,
         mode=args.mode,
+        collect_beliefs=not args.no_beliefs,
     )
 
     result = GameHarness(config, agents).run()
@@ -298,6 +354,10 @@ def run_main(argv: list[str]) -> None:
             )
 
     print(f"\nrun artifacts written to {run_dir}/")
+    if args.open:
+        import webbrowser
+
+        webbrowser.open((run_dir / "replay.html").resolve().as_uri())
 
 
 if __name__ == "__main__":

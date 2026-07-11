@@ -156,6 +156,7 @@ def _run_rotation(
     small_blind: int,
     big_blind: int,
     starting_stack: int,
+    collect_beliefs: bool,
     out_dir: Path | None,
 ) -> tuple[int, GameResult, dict[str, str]]:
     seating = _seating_for(labels, seats, rotation)
@@ -172,6 +173,7 @@ def _run_rotation(
         starting_stack=starting_stack,
         agent_ids=seats,
         mode=mode,
+        collect_beliefs=collect_beliefs,
     )
     result = GameHarness(config, agents).run()
     if out_dir is not None:
@@ -189,6 +191,7 @@ def run_benchmark(
     small_blind: int = 5,
     big_blind: int = 10,
     starting_stack: int = 1000,
+    collect_beliefs: bool = True,
     parallel: int | None = None,
     out_dir: str | Path | None = None,
     resume_dir: str | Path | None = None,
@@ -235,6 +238,7 @@ def run_benchmark(
             small_blind=small_blind,
             big_blind=big_blind,
             starting_stack=starting_stack,
+            collect_beliefs=collect_beliefs,
             out_dir=checkpoint_dir or resume_path,
         )
 
@@ -396,6 +400,7 @@ def run_benchmark_sweep(
     small_blind: int = 5,
     big_blind: int = 10,
     starting_stack: int = 1000,
+    collect_beliefs: bool = True,
     parallel: int | None = None,
     out_dir: str | Path | None = None,
     resume_dir: str | Path | None = None,
@@ -422,6 +427,7 @@ def run_benchmark_sweep(
             small_blind=small_blind,
             big_blind=big_blind,
             starting_stack=starting_stack,
+            collect_beliefs=collect_beliefs,
             parallel=parallel,
             out_dir=seed_dir,
             resume_dir=seed_dir if resume_base is not None else None,
