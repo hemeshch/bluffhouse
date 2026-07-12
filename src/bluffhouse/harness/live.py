@@ -10,6 +10,7 @@ written to the runs directory like any other and gets a full replay.
 import json
 import queue
 import threading
+import traceback
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -205,8 +206,9 @@ def start_live_game(
             with job.lock:
                 job.status, job.run_dir = "stopped", run_name
         except Exception as exc:  # noqa: BLE001 — surface anything to the UI
+            traceback.print_exc()  # the UI gets one line; the server log gets it all
             with job.lock:
-                job.status, job.error = "error", str(exc)
+                job.status, job.error = "error", f"{type(exc).__name__}: {exc}"
         finally:
             job.finish()
 

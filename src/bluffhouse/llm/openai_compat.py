@@ -59,6 +59,12 @@ class OpenAICompatClient(LLMClient):
                 )
         except openai.OpenAIError as exc:
             raise LLMError(f"openai-compat ({self.model}): {exc}") from exc
+        except UnicodeEncodeError as exc:
+            # headers are ASCII-only — this is almost always a mangled api key
+            raise LLMError(
+                f"openai-compat ({self.model}): non-ASCII character in a request "
+                f"header (usually a corrupted API key): {exc}"
+            ) from exc
         latency = time.monotonic() - start
 
         text = response.choices[0].message.content or ""

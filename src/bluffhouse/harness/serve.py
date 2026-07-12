@@ -155,11 +155,24 @@ def create_app(root: Path):
     @api.post("/live")
     def live_start(req: LiveRequest) -> dict:
         seed = req.seed if req.seed is not None else int(time.time()) % 1_000_000
+        for i, seat in enumerate(req.seats):
+            key = seat.api_key.get_secret_value().strip() if seat.api_key else ""
+            if key and not key.isascii():
+                # keys travel in HTTP headers, which are ASCII-only — a smart
+                # quote or em dash from a rich-text copy kills every call
+                raise HTTPException(
+                    400,
+                    f"seat {i + 1}: the API key contains a non-ASCII character "
+                    "(often an em dash or smart quote from a rich-text copy) — "
+                    "re-copy it as plain text",
+                )
+            if seat.name and ("/" in seat.name or "\x00" in seat.name):
+                raise HTTPException(400, f"seat {i + 1}: name cannot contain '/'")
         seat_dicts = [
             {
                 "spec": s.spec,
                 "name": s.name,
-                "api_key": s.api_key.get_secret_value() if s.api_key else None,
+                "api_key": s.api_key.get_secret_value().strip() if s.api_key else None,
             }
             for s in req.seats
         ]

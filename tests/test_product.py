@@ -183,6 +183,15 @@ def test_live_rejects_bad_specs(tmp_path):
     assert bad.status_code == 400
     too_few = client.post("/api/live", json={"seats": [{"spec": "fold"}]})
     assert too_few.status_code == 422
+    # keys ride in ASCII-only HTTP headers — reject rich-text paste damage early
+    mangled_key = client.post("/api/live", json={
+        "seats": [
+            {"spec": "anthropic:claude-sonnet-5", "api_key": "sk-ant—mangled"},
+            {"spec": "fold"},
+        ],
+    })
+    assert mangled_key.status_code == 400
+    assert "non-ASCII" in mangled_key.json()["detail"]
 
 
 # ── belief opt-out ──────────────────────────────────────────────────

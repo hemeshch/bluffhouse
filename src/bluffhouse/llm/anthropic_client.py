@@ -64,6 +64,12 @@ class AnthropicClient(LLMClient):
         except (anthropic.APIError, TypeError) as exc:
             # TypeError is the SDK's unresolved-authentication failure mode
             raise LLMError(f"anthropic: {exc}") from exc
+        except UnicodeEncodeError as exc:
+            # headers are ASCII-only — this is almost always a mangled api key
+            raise LLMError(
+                f"anthropic: non-ASCII character in a request header "
+                f"(usually a corrupted API key): {exc}"
+            ) from exc
         latency = time.monotonic() - start
 
         if response.stop_reason == "refusal":
