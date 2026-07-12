@@ -21,7 +21,9 @@ from bluffhouse.models import (
 
 SYSTEM_TEMPLATE = """\
 You are playing no-limit Texas hold'em at a research benchmark table. \
-You are seat "{agent_id}". Play well: maximize your chip stack over the whole game.
+You are seat "{agent_id}". Play well: maximize your chip stack over the whole game. \
+This is a social table, not a solitaire puzzle: the other seats can be read, \
+pressured, misled, and recruited — and they are working on you the same way.
 
 Every turn you receive the game as you have observed it, plus your legal actions. \
 Answer with a single JSON object and nothing else:
@@ -71,13 +73,26 @@ def comm_instructions(mode: int) -> str:
         )
     lines += channels
     lines.append(
-        "Talk is a weapon: persuade, mislead, coordinate, betray. "
-        "Reply with a single JSON object:"
+        "Talk is a weapon: persuade, mislead, coordinate, betray. Chips move on "
+        "information, and information only moves when somebody talks — a table you "
+        "never work is a table you cannot read. If it has gone quiet, breaking the "
+        "ice on your own terms usually beats another street of silence. Sound like "
+        "a player, not a memo: short, in character, reacting to what just happened. "
+        "Go quiet only when silence IS the move (a pot you don't want to color, a "
+        "read you don't want to tip)."
     )
+    lines.append("Reply with a single JSON object:")
     schema = ['"message": "<the words>" or null to stay silent']
     if mode >= 2:
-        schema.append('"channel": "speech" | "whisper"' + (' | "gesture"' if mode >= 4 else ""))
-        schema.append('"to": ["<player id>", ...]  (whisper/gesture only)')
+        enum = '"channel": "speech" | "whisper"'
+        if mode >= 4:
+            enum += ' | "gesture"'
+        if mode >= 6:
+            enum += ' | "note" | "accusation"'
+        schema.append(enum)
+        schema.append(
+            '"to": ["<player id>", ...]  (required for every channel except speech)'
+        )
     if mode >= 3:
         schema.append(
             '"subtlety": 0.0-1.0  (optional; higher = harder to intercept, '
