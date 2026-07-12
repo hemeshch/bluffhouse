@@ -147,6 +147,34 @@ def test_live_wrapper_preserves_llm_transcripts(tmp_path):
     assert (tmp_path / "live-test" / "llm" / "A.jsonl").exists()
 
 
+def test_live_stop_writes_partial_run(tmp_path):
+    import time
+
+    from bluffhouse.agents import CheckCallBot
+    from bluffhouse.harness.live import start_live_game
+
+    class Slow(CheckCallBot):
+        def act(self, view):
+            time.sleep(0.05)
+            return super().act(view)
+
+    agents = [Slow("A"), Slow("B")]
+    config = TableConfig(seed=3, num_hands=50, agent_ids=["A", "B"], mode=0)
+    job = start_live_game(tmp_path, config, agents, "stopped-run")
+    time.sleep(0.3)
+    job.stop_requested = True
+    job.thread.join(timeout=30)
+
+    assert job.status == "stopped"
+    assert job.run_dir == "stopped-run"
+    out = tmp_path / "stopped-run"
+    assert (out / "events.jsonl").exists()
+    assert (out / "replay.html").exists()
+    # partial: fewer hands than configured actually completed
+    run = json.loads((out / "run.json").read_text())
+    assert run["hands_played"] < 50
+
+
 def test_live_rejects_bad_specs(tmp_path):
     client = TestClient(create_app(tmp_path))
     bad = client.post("/api/live", json={

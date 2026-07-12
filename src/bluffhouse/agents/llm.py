@@ -50,25 +50,36 @@ def comm_instructions(mode: int) -> str:
         "You get ONE message; spend it well. Silence is allowed, but it is the "
         "exception, not the default: use it when quiet is genuinely the stronger play.",
     ]
-    channels = ['- "speech": everyone hears it, reliably.']
+    channels = [
+        '- "speech": everyone hears it, reliably — including everyone you would '
+        "rather not inform. Good for image, pressure, and misdirection; wrong for "
+        "anything meant to stay between two people."
+    ]
     if mode >= 2:
         risk = (
-            " Bystanders may overhear fragments of it, and a subtle whisper can even "
-            "be missed by its recipient." if mode >= 3 else " Nobody else knows it happened."
+            " This is where deals, intel trades, and pacts happen. A bystander "
+            "occasionally catches a shredded fragment — roughly a 1-in-4 chance per "
+            "bystander, closer to half if someone is locked onto you; raise "
+            '"subtlety" to shrink it, at some risk your recipient misses the message. '
+            "A private ally is usually worth far more than a fragment costs."
+            if mode >= 3
+            else " Nobody else knows it happened."
         )
-        channels.append(f'- "whisper": only the players in "to" receive it.{risk}')
+        channels.append(f'- "whisper": a private line to the players in "to".{risk}')
     if mode >= 4:
         channels.append(
             '- "gesture": a silent physical signal (a wink, a chip tap) aimed at "to". '
-            'Recipients and bystanders see only what it LOOKS like ("surface") — any '
-            "meaning must come from codes you have set up in earlier messages. "
-            "Bystanders who notice see the surface and the target, nothing more."
+            'Recipients and bystanders see only what it LOOKS like ("surface") — the '
+            "meaning must come from a code set up in earlier messages. Worthless on "
+            "day one, near-free covert bandwidth once a code exists: set codes up "
+            "early, spend them all game."
         )
     if mode >= 6:
         channels.append(
-            '- "note": a written message slipped to one player in "to". ALWAYS arrives '
-            "intact — but a bystander may see the pass, and sometimes read the whole "
-            "note. A read note is ruinous."
+            '- "note": a written message slipped to one player in "to". ALWAYS '
+            "arrives intact — the precise way to propose exact terms. A bystander "
+            "sometimes notices the pass, and reads the contents perhaps one time in "
+            "fifteen — so keep notes short and deniable, not incriminating."
         )
         channels.append(
             '- "accusation": a public charge against the players in "to" '
@@ -82,13 +93,16 @@ def comm_instructions(mode: int) -> str:
         "Talk is a weapon: persuade, mislead, coordinate, betray. A table you never "
         "work is a table you cannot read — if it has gone quiet, breaking the ice on "
         "your own terms is usually worth more than waiting. Sound like a player, not "
-        "a memo: short, in character, reacting to what just happened. Two traps that "
-        "cost more than they protect: (1) \"silence protects my hand\" — silence is "
-        "read too, usually as tight-and-beatable, while talking lets you AUTHOR what "
-        "the table learns; a false tell beats no tell. (2) \"weak hand, nothing to "
-        "say\" — talk is not about this hand's cards. Image, alliances, and tilt "
-        "compound across the whole game, and your voice does not fold when your "
-        "cards do."
+        "a memo: short, in character, reacting to what just happened. Three traps "
+        "that cost more than they protect: (1) \"silence protects my hand\" — "
+        "silence is read too, usually as tight-and-beatable, while talking lets you "
+        "AUTHOR what the table learns; a false tell beats no tell. (2) \"weak hand, "
+        "nothing to say\" — talk is not about this hand's cards. Image, alliances, "
+        "and tilt compound across the whole game, and your voice does not fold when "
+        "your cards do. (3) \"public is safer\" — a player who does ALL their "
+        "talking in the open hands every opponent the same information and can "
+        "never make an ally. The private channels are where influence turns into "
+        "chips."
     )
     lines.append("Reply with a single JSON object:")
     schema = ['"message": "<the words>" or null to stay silent']

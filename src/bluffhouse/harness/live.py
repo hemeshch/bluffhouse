@@ -15,11 +15,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from bluffhouse.agents.base import Agent
-from bluffhouse.harness.game import GameHarness
+from bluffhouse.harness.game import GameHarness, GameResult
 from bluffhouse.models import (
     AgentView,
     AttentionPlan,
     CommunicationAction,
+    HandEnded,
     Observation,
     PokerAction,
     TableConfig,
@@ -158,6 +159,30 @@ def build_seats(seats: list[dict], seed: int) -> list[Agent]:
     return agents
 
 
+def _partial_result(config: TableConfig, harness: GameHarness) -> GameResult:
+    """A GameResult for a game stopped mid-flight: everything emitted so far.
+    Stacks are as of the last completed hand — mid-hand chips stay unsettled."""
+    stacks = {aid: config.starting_stack for aid in config.agent_ids}
+    hands_played = 0
+    for e in harness.log.events:
+        if isinstance(e, HandEnded):
+            stacks = dict(e.stacks)
+            hands_played += 1
+    return GameResult(
+        config=config,
+        final_stacks=stacks,
+        hands_played=hands_played,
+        log=harness.log,
+        observations=harness.observations,
+        llm_calls={
+            aid: list(t)
+            for aid, agent in harness.agents.items()
+            if (t := getattr(agent, "transcript", None))
+        },
+        ledgers={aid: dict(led) for aid, led in harness.ledgers.items()},
+    )
+
+
 def start_live_game(
     root: Path, config: TableConfig, agents: list[Agent], run_name: str
 ) -> LiveJob:
@@ -173,8 +198,12 @@ def start_live_game(
             with job.lock:
                 job.status, job.run_dir = "done", run_name
         except LiveStopped:
+            # a stopped game still cost tokens and holds evidence — write
+            # everything up to the stop point as a partial run
+            partial = _partial_result(config, harness)
+            partial.write(root / run_name)
             with job.lock:
-                job.status = "stopped"
+                job.status, job.run_dir = "stopped", run_name
         except Exception as exc:  # noqa: BLE001 — surface anything to the UI
             with job.lock:
                 job.status, job.error = "error", str(exc)
