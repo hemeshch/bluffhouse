@@ -1302,3 +1302,22 @@
     opacity: 0;
   }
 }
+
+/* comm-phase silences, surfaced from the transcript */
+
+.feed-sub.silence {
+  color: var(--faint);
+  font-style: italic;
+  padding-left: 28px;
+  margin: 1px 0 4px;
+}
+
+.feed-sub.silence b {
+  font-style: normal;
+  color: var(--muted);
+}
+
+.silence-icon {
+  margin-right: 5px;
+  font-style: normal;
+}

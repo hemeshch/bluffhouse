@@ -71,6 +71,9 @@ class AnthropicClient(LLMClient):
             text = ""
         else:
             text = "".join(b.text for b in response.content if b.type == "text")
+        thinking = "\n".join(
+            t for b in response.content if b.type == "thinking" and (t := getattr(b, "thinking", ""))
+        )
 
         usage = response.usage
         return LLMResponse(
@@ -79,4 +82,5 @@ class AnthropicClient(LLMClient):
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             latency_s=latency,
+            thinking=thinking[:2000] or None,
         )

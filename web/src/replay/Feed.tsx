@@ -87,14 +87,38 @@ export function Feed({
       }
     }
 
-    const r = index.reasoning[e.event_id];
-    if (r && (pov === "truth" || pov === r.agent)) {
+    const KIND_LABEL = {
+      action: "was thinking",
+      attention: "on where to look",
+      beliefs: "reading the table",
+      comm: "before speaking",
+    } as const;
+    for (const [k, n] of (index.notes[e.event_id] ?? []).entries()) {
+      if (pov !== "truth" && pov !== n.agent) continue;
       rows.push(
-        <div key={e.event_id + ":think"} className="feed-sub reasoning">
+        <div
+          key={`${e.event_id}:n${k}`}
+          className="feed-sub reasoning"
+          title={n.thinking ?? undefined}
+        >
           <span className="feed-think-who">
-            {r.agent} was thinking{r.fault ? " · after a malformed reply" : ""}
+            {n.agent} {KIND_LABEL[n.kind]}
+            {n.fault ? " · after a malformed reply" : ""}
           </span>
-          {r.text ?? "(model reply unusable — safe action substituted)"}
+          {n.text ?? (n.kind === "action" ? "(model reply unusable — safe action substituted)" : "(no reasoning given)")}
+        </div>,
+      );
+    }
+    for (const [k, s] of (index.silences[e.event_id] ?? []).entries()) {
+      if (pov !== "truth" && pov !== s.agent) continue;
+      rows.push(
+        <div
+          key={`${e.event_id}:s${k}`}
+          className="feed-sub silence"
+          title={s.thinking ?? undefined}
+        >
+          <span className="silence-icon">🤐</span>
+          <b>{s.agent}</b> chose silence{s.text ? <> — “{s.text}”</> : null}
         </div>,
       );
     }

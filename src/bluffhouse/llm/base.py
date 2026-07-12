@@ -34,6 +34,9 @@ class LLMResponse(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     latency_s: float = 0.0
+    # the provider's native chain-of-thought (e.g. Claude thinking blocks),
+    # truncated by the adapter; None for providers that don't expose one
+    thinking: str | None = None
 
 
 class LLMCall(BaseModel):
@@ -57,6 +60,7 @@ class LLMCall(BaseModel):
     latency_s: float = 0.0
     parse_error: str | None = None
     action: str | None = None
+    thinking: str | None = None
 
 
 class LLMClient(ABC):

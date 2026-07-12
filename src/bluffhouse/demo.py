@@ -55,9 +55,13 @@ def _mock_claude() -> Agent:
                 return (
                     '{"message": "Grok and GPT have an arrangement — I heard part of it myself.", '
                     '"channel": "accusation", "to": ["Grok", "GPT"], '
+                    '"reasoning": "Say it in the open before they can coordinate a denial.", '
                     '"intent": "convert my intercepted fragment into public pressure"}'
                 )
-            return '{"message": null}'
+            return (
+                '{"message": null, "reasoning": '
+                '"Let them keep talking — the less I say, the more they reveal."}'
+            )
         if "call (" in prompt:
             return '{"reasoning": "Their side deal does not change my cards.", "action": "call"}'
         return '{"reasoning": "Let the conspirators pay to see cards.", "action": "check"}'

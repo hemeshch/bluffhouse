@@ -189,6 +189,7 @@ export interface LLMCall {
   latency_s: number;
   parse_error: string | null;
   action: string | null;
+  thinking?: string | null;
 }
 
 export interface Judgment {

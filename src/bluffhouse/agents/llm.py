@@ -397,6 +397,7 @@ Reply with a single JSON object:
                 latency_s=response.latency_s if response else 0.0,
                 parse_error=error,
                 action=action.describe() if action else None,
+                thinking=response.thinking if response else None,
             )
         )
 
