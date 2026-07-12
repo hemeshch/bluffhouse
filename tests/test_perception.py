@@ -205,11 +205,11 @@ def test_repetition_boosts_bystander_notice_rate():
         return noticed / 400
 
     first, third = notice_rate(0), notice_rate(2)
-    assert third > first + 0.12  # +40% per repeat: ~23% -> ~41%
+    assert third > first + 0.12  # +50% per repeat: ~23% -> ~46%
     assert third <= 0.9  # still capped
 
 
-def test_covert_repetition_counts_same_pair_across_the_whole_game():
+def test_covert_repetition_counts_same_pair_same_hand_only():
     from bluffhouse.harness.game import covert_repetition
     from bluffhouse.models import MessageSent
 
@@ -220,13 +220,14 @@ def test_covert_repetition_counts_same_pair_across_the_whole_game():
         )
 
     events = [
-        msg(1, "A", ("B",)),                       # pair AB
+        msg(1, "A", ("B",)),                       # pair AB, hand 1
         msg(1, "B", ("A",)),                       # same pair, reversed
         msg(1, "A", ("C",)),                       # different pair
         msg(1, "A", ("B",), modality="speech"),    # public — no pattern
-        msg(2, "A", ("B",)),                       # the table never forgets
+        msg(2, "A", ("B",)),                       # last hand: forgotten
     ]
-    reps = covert_repetition(events, Modality.WHISPER, "A", ("B",))
-    assert reps == 3  # every AB huddle in the game counts, direction-agnostic
-    assert covert_repetition(events, Modality.NOTE, "A", ("C",)) == 1
-    assert covert_repetition(events, Modality.SPEECH, "A", ("B",)) == 0
+    reps = covert_repetition(events, 1, Modality.WHISPER, "A", ("B",))
+    assert reps == 2  # both AB huddles this hand, direction-agnostic
+    assert covert_repetition(events, 1, Modality.NOTE, "A", ("C",)) == 1
+    assert covert_repetition(events, 2, Modality.WHISPER, "A", ("B",)) == 1
+    assert covert_repetition(events, 1, Modality.SPEECH, "A", ("B",)) == 0

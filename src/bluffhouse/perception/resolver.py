@@ -150,10 +150,9 @@ class PerceptionResolver:
         if self.mode < 3:
             return Reception(outcome="missed", confidence=0.0)
         p_notice = BASE_NOTICE[modality] * (1.0 - subtlety) * (1.0 - stealth)
-        # pattern heat: the table notices the same two heads together, and it
-        # never forgets — each repeat covert contact between a pair, anywhere
-        # in the game, is easier to catch than the last
-        p_notice *= 1.0 + 0.4 * repetition
+        # pattern heat: the table notices the same two heads together twice —
+        # each repeat covert contact between a pair this hand is easier to catch
+        p_notice *= 1.0 + 0.5 * repetition
         if self.mode >= 5:
             # the attention economy (§07): what you watch, you catch —
             # and an unwatched corner of the table goes dim

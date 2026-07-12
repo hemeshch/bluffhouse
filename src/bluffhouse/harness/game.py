@@ -50,14 +50,17 @@ _llm_call_adapter: TypeAdapter[LLMCall] = TypeAdapter(LLMCall)
 
 def covert_repetition(
     events: Sequence,
+    hand_no: int,
     modality: Modality,
     sender: str,
     targets: tuple[str, ...],
 ) -> int:
     """Pattern heat: how many whispers/notes this same pair of heads has
-    already exchanged — across the whole game; the table never forgets.
-    Each repeat is easier to catch (+40% notice per repeat in the resolver),
-    so recurring coordination has to migrate to coded gestures."""
+    already exchanged this hand. Each repeat is easier for the table to catch
+    (+50% notice per repeat in the resolver); the count resets next hand.
+    Within-hand huddle-spam is priced — the relationship itself is not.
+    (A game-long counter was tried and over-deterred: models stopped
+    whispering entirely rather than risk the compounding tax.)"""
     if modality not in (Modality.WHISPER, Modality.NOTE):
         return 0
     pair = frozenset((sender, *targets))
@@ -65,6 +68,7 @@ def covert_repetition(
         1
         for e in events
         if isinstance(e, MessageSent)
+        and e.hand_no == hand_no
         and e.modality in ("whisper", "note")
         and frozenset((e.sender, *e.targets)) == pair
     )
@@ -516,7 +520,7 @@ class GameHarness:
             table_noise=noise if self.config.mode >= 6 else 0.0,
             distractor=distractor,
             repetition=covert_repetition(
-                self.log.events, comm.modality, sender, targets
+                self.log.events, hand_no, comm.modality, sender, targets
             ),
         )
         distraction = min(max(comm.distraction_power, 0.0), 1.0)

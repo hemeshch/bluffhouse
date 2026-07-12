@@ -97,18 +97,19 @@ def comm_instructions(mode: int) -> str:
     lines += channels
     if mode >= 3:
         heat = (
-            "Pattern heat: the table notices the same two heads together, and it "
-            "NEVER forgets. Every repeat whisper or note between the same pair — "
-            "counted across the whole game — is roughly 40% more likely to be "
-            "caught than the last. A pair that whispers every hand ends up "
-            "performing for the entire table."
+            "Pattern heat: whisper freely — the first contact between any pair "
+            "each hand is at normal odds. But the table notices the same two "
+            "heads together twice: each REPEAT whisper or note between the same "
+            "pair within one hand is about half again as likely to be caught. "
+            "It resets next hand, so pace the huddle, don't abandon it."
         )
         if mode >= 4:
             heat += (
-                ' The professional pattern: whisper ONCE to set up a code ("two '
-                'chip taps = fold to my raise"), then run it with gestures — '
-                "gestures and eye contact are pattern-exempt and carry no content "
-                "even when noticed."
+                " When eyes are ON you — after a caught fragment, under an "
+                "accusation, mid-big-pot — that is what coded gestures are for: "
+                'set up a code with an earlier whisper ("two chip taps = fold to '
+                'my raise") and you can keep signaling under the spotlight, since '
+                "a noticed gesture leaks its look, never its meaning."
             )
         lines.append(heat)
         lines.append(
