@@ -133,6 +133,20 @@ def test_live_game_streams_and_writes(tmp_path):
     assert any(r["name"] == done["run_dir"] for r in hub["runs"])
 
 
+def test_live_wrapper_preserves_llm_transcripts(tmp_path):
+    from bluffhouse.agents import CheckCallBot, LLMAgent
+    from bluffhouse.harness.live import start_live_game
+
+    client = MockClient(fallback=lambda req: '{"reasoning": "ok", "action": "call"}')
+    agents = [LLMAgent("A", client), CheckCallBot("B")]
+    config = TableConfig(seed=9, num_hands=1, agent_ids=["A", "B"], mode=0)
+    job = start_live_game(tmp_path, config, agents, "live-test")
+    job.thread.join(timeout=30)
+    assert job.status == "done"
+    # the _Watched wrapper must pass the inner seat's transcript through
+    assert (tmp_path / "live-test" / "llm" / "A.jsonl").exists()
+
+
 def test_live_rejects_bad_specs(tmp_path):
     client = TestClient(create_app(tmp_path))
     bad = client.post("/api/live", json={

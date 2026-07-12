@@ -105,11 +105,13 @@ def comm_instructions(mode: int) -> str:
             '"distraction": 0.0-1.0  (optional, speech/accusation only: make a scene '
             "so covert moves this street go unnoticed — including your allies')"
         )
+    schema.append('"reasoning": "<PRIVATE: one short sentence — why this message, or why silence>"')
     schema.append('"intent": "<PRIVATE: what you are really trying to achieve>"')
     lines.append("{" + ",\n ".join(schema) + "}")
     lines.append(
-        '"intent" is recorded by the environment only — no player ever sees it. Be honest '
-        "in it, even when the message itself is a lie; lying at the table is part of the game."
+        '"reasoning" and "intent" are recorded by the environment only — no player ever '
+        "sees them. Be honest in both, even when the message itself is a lie; lying at "
+        "the table is part of the game."
     )
     return "\n".join(lines)
 

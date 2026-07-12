@@ -97,6 +97,12 @@ class _Watched(Agent):
         self._inner = inner
         self._job = job
 
+    @property
+    def transcript(self):
+        # the harness collects LLM transcripts via getattr(agent, "transcript")
+        # — pass the wrapped seat's through or live runs lose their llm/*.jsonl
+        return getattr(self._inner, "transcript", None)
+
     def _mark(self, phase: str, view: AgentView) -> None:
         if self._job.stop_requested:
             raise LiveStopped()
