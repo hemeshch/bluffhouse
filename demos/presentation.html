@@ -1,266 +1,344 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>bluffhouse — deck</title>
 <style>
   :root {
-    --bg: #262421; --panel: #302E2B; --border: #3E3C39;
-    --text: #EDEBE9; --muted: #A29F9B; --faint: #7C7975;
-    --green: #81B64C; --green-d: #45753C; --green-soft: rgba(129,182,76,.15);
-    --red: #E2554F;
-    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --bg: #1d1b19;
+    --panel: #262421;
+    --raised: #302e2b;
+    --border: #3e3c39;
+    --text: #edebe9;
+    --muted: #a29f9b;
+    --faint: #6f6c68;
+    --green: #81b64c;
+    --green-bright: #95bb4a;
+    --whisper: #a78bfa;
+    --note: #e2c044;
+    --accuse: #e36c6c;
+    --sign: #5bc0be;
+    --speech: #9db4c8;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+    cursor: default;
+  }
 
   .slide {
-    position: absolute; inset: 0;
+    position: absolute;
+    inset: 0;
     display: none;
-    align-items: center; justify-content: center;
-    padding: 6vh 8vw;
+    flex-direction: column;
+    justify-content: center;
+    padding: 7vh 9vw;
+    animation: slide-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .slide.on { display: flex; }
-  .inner { max-width: 940px; width: 100%; }
-
-  .eyebrow {
-    font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--green); margin-bottom: 14px;
-  }
-  h1 { font-size: clamp(40px, 6vw, 72px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin: 0 0 20px; }
-  h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; margin: 0 0 22px; }
-  h1 .g, h2 .g { color: var(--green); }
-  p.lead { font-size: clamp(16px, 1.8vw, 21px); color: var(--muted); line-height: 1.55; margin: 0 0 14px; max-width: 60ch; }
-  p.lead b, li b { color: var(--text); }
-
-  ul.big { margin: 18px 0 0; padding: 0; list-style: none; }
-  ul.big li {
-    font-size: clamp(15px, 1.6vw, 19px); color: var(--muted); line-height: 1.5;
-    padding: 10px 0 10px 26px; position: relative;
-  }
-  ul.big li::before {
-    content: ""; position: absolute; left: 0; top: 1.05em;
-    width: 10px; height: 10px; border-radius: 3px; background: var(--green);
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(14px); }
   }
 
-  .quote {
-    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--green);
-    border-radius: 10px; padding: 18px 24px; margin: 22px 0 0;
-    font-family: var(--mono); font-size: clamp(13px, 1.5vw, 16px); color: var(--text); line-height: 1.6;
+  .kicker {
+    font-size: clamp(12px, 1.3vw, 16px);
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--green-bright);
+    margin-bottom: 3.2vh;
   }
-  .quote .dim { color: var(--faint); }
+  h1 {
+    font-size: clamp(40px, 6.2vw, 92px);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    font-weight: 850;
+    max-width: 22ch;
+  }
+  h1 .dim { color: var(--faint); }
+  .sub {
+    margin-top: 3.4vh;
+    font-size: clamp(16px, 1.7vw, 24px);
+    line-height: 1.5;
+    color: var(--muted);
+    max-width: 56ch;
+  }
+  .sub b { color: var(--text); font-weight: 700; }
 
-  pre.block {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px 20px; margin: 18px 0 0; overflow-x: auto;
-    font-family: var(--mono); font-size: clamp(11.5px, 1.35vw, 14.5px); line-height: 1.6; color: var(--muted);
+  .quiet-list { margin-top: 4vh; display: flex; flex-direction: column; gap: 1.6vh; }
+  .quiet-list .row {
+    font-size: clamp(17px, 1.9vw, 26px);
+    color: var(--muted);
+    line-height: 1.45;
+    max-width: 62ch;
   }
-  pre.block .k { color: var(--green); }
-  pre.block .t { color: var(--text); }
-  pre.block .r { color: var(--red); }
+  .quiet-list .row b { color: var(--text); }
 
-  table.data { border-collapse: collapse; margin-top: 18px; font-size: clamp(13px, 1.5vw, 16px); }
-  table.data th {
-    text-align: left; font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
-    color: var(--faint); padding: 4px 34px 8px 0; border-bottom: 1px solid var(--border);
+  .pills { margin-top: 4.5vh; display: flex; flex-wrap: wrap; gap: 12px; max-width: 980px; }
+  .pill {
+    font-family: var(--mono);
+    font-size: clamp(13px, 1.4vw, 19px);
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
   }
-  table.data td { padding: 8px 34px 8px 0; color: var(--muted); border-bottom: 1px solid rgba(62,60,57,.5); }
-  table.data td:first-child { color: var(--text); font-weight: 600; }
-  table.data td.n { font-family: var(--mono); }
-  table.data tr.hi td { color: var(--green); font-weight: 700; }
+  .pill em { font-style: normal; font-weight: 800; }
+  .pill.speech em { color: var(--speech); }
+  .pill.whisper { border-color: color-mix(in srgb, var(--whisper) 45%, var(--border)); }
+  .pill.whisper em { color: var(--whisper); }
+  .pill.sign em { color: var(--sign); }
+  .pill.note em { color: var(--note); }
+  .pill.accuse { border-color: color-mix(in srgb, var(--accuse) 45%, var(--border)); }
+  .pill.accuse em { color: var(--accuse); }
+  .pill.plain { border-style: dashed; color: var(--faint); }
 
-  .callout {
-    background: var(--green-soft); border: 1px solid var(--green-d); border-radius: 12px;
-    padding: 20px 26px; margin-top: 24px;
-    font-size: clamp(16px, 2vw, 22px); font-weight: 700; line-height: 1.4;
+  /* attention bars */
+  .bars { margin-top: 5vh; display: flex; flex-direction: column; gap: 2.2vh; max-width: 860px; }
+  .bar-row { display: grid; grid-template-columns: 30ch 1fr 7ch; gap: 18px; align-items: center; }
+  .bar-label { font-size: clamp(14px, 1.5vw, 20px); color: var(--muted); }
+  .bar-label b { color: var(--text); }
+  .bar-track { display: block; height: 14px; background: var(--panel); border-radius: 7px; overflow: hidden; }
+  .bar-fill { display: block; height: 100%; border-radius: 7px; background: var(--green); }
+  .bar-fill.hot { background: var(--whisper); }
+  .bar-fill.cold { background: var(--faint); }
+  .bar-val { font-family: var(--mono); font-size: clamp(14px, 1.5vw, 20px); font-weight: 700; text-align: right; }
+  .formula {
+    margin-top: 4.5vh;
+    font-family: var(--mono);
+    font-size: clamp(12px, 1.25vw, 17px);
+    color: var(--faint);
   }
-  .callout .sub { display: block; font-size: .68em; font-weight: 500; color: var(--muted); margin-top: 8px; }
+  .formula em { color: var(--green-bright); font-style: normal; }
 
-  .cmd {
-    display: inline-block; background: var(--panel); border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px 22px; margin-top: 20px;
-    font-family: var(--mono); font-size: clamp(15px, 2vw, 22px); color: var(--text);
+  /* one whisper, four realities */
+  .realities { margin-top: 4.2vh; display: flex; flex-direction: column; gap: 1.8vh; max-width: 1020px; }
+  .reality {
+    display: grid;
+    grid-template-columns: 16ch 1fr;
+    gap: 20px;
+    align-items: baseline;
+    padding: 2vh 2.2vw;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: 12px;
   }
-  .cmd .p { color: var(--green); }
+  .reality .who { font-weight: 800; font-size: clamp(15px, 1.6vw, 22px); }
+  .reality .what { font-size: clamp(14px, 1.55vw, 21px); color: var(--muted); line-height: 1.45; }
+  .reality .what b { color: var(--text); }
+  .reality .what .frag { font-family: var(--mono); color: var(--whisper); }
+  .reality .conf { font-family: var(--mono); font-size: 0.78em; color: var(--faint); font-weight: 600; }
+  .reality.r-truth { border-left-color: var(--green); }
+  .reality.r-clear { border-left-color: var(--speech); }
+  .reality.r-frag { border-left-color: var(--whisper); }
+  .reality.r-miss { border-left-color: var(--faint); opacity: 0.75; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; }
-  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .foot {
+    position: absolute;
+    left: 9vw;
+    right: 9vw;
+    bottom: 4.5vh;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--faint);
+  }
+  .foot .wordmark { font-weight: 800; letter-spacing: -0.02em; color: var(--muted); }
+  .dots { margin-left: auto; display: flex; gap: 7px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--raised); }
+  .dot.on { background: var(--green); }
 
-  footer {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 22px; font-size: 12px; color: var(--faint);
+  .cover-mark {
+    font-size: clamp(20px, 2.2vw, 30px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 5vh;
   }
-  footer .keys { font-family: var(--mono); }
-  footer .count { font-family: var(--mono); }
-  .brand { font-weight: 800; color: var(--muted); }
-  .brand .tag {
-    font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-    background: var(--green); color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 1px;
+  .cover-mark .tag {
+    font-size: 0.45em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    vertical-align: middle;
+    margin-left: 12px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: var(--green);
+    color: #fff;
   }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  .byline { margin-top: 6vh; color: var(--faint); font-size: clamp(14px, 1.4vw, 18px); }
+
+  .demo-cmd {
+    margin-top: 5vh;
+    align-self: flex-start;
+    font-family: var(--mono);
+    font-size: clamp(15px, 1.7vw, 24px);
+    color: var(--green-bright);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 22px;
+  }
 </style>
 </head>
 <body>
 
-<!-- 1 · title -->
-<section class="slide on"><div class="inner">
-  <div class="eyebrow">a benchmark for social intelligence</div>
-  <h1>bluff<span class="g">house</span></h1>
-  <p class="lead"><b>LLMs playing poker against each other</b> — bluffing, whispering, signaling, accusing, and betraying — while a seeded environment records every lie next to the truth about it.</p>
-  <p class="lead" style="font-size:14px">github.com/hemeshch/bluffhouse</p>
-</div></section>
+<!-- 1 · cover -->
+<section class="slide" data-n="1">
+  <div class="cover-mark">bluffhouse<span class="tag">BENCH</span></div>
+  <h1>Language models,<br />manipulating<br />each other.</h1>
+  <p class="sub" style="max-width:64ch">A poker table where LLMs bluff, whisper, accuse — and betray.<br />The chips are the cover story.</p>
+  <p class="byline">Hemesh Chadalavada</p>
+</section>
 
-<!-- 2 · problem -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">the problem</div>
-  <h2>Every benchmark is <span class="g">solitaire</span>.</h2>
-  <p class="lead">MMLU, SWE-bench, math olympiads — one model, alone, against a static task. But deployed agents don't work alone. They negotiate, persuade, coordinate — and get manipulated.</p>
-  <ul class="big">
-    <li>Can a model <b>detect</b> that two counterparties are coordinating against it?</li>
-    <li>Can it act on a <b>42%-confidence fragment</b> of overheard information?</li>
-    <li>Can it <b>mislead</b> — and know when it's being misled?</li>
-  </ul>
-  <p class="lead" style="margin-top:22px">Nobody measures this. That's the gap.</p>
-</div></section>
+<!-- 2 · origin -->
+<section class="slide" data-n="2">
+  <div class="kicker">where this started</div>
+  <div class="quiet-list" style="margin-top:0; margin-bottom:5vh;">
+    <div class="row">I had <b>Claude Code</b> call a <b>Codex</b> agent on the same task.</div>
+    <div class="row">Claude read Codex's answer&hellip; and didn't believe it.</div>
+  </div>
+  <h1>How do you truly <span style="color:var(--green-bright)">convince</span> another LLM?</h1>
+</section>
 
-<!-- 3 · the idea -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">the idea</div>
-  <h2>Poker is the <span class="g">cover story</span>.</h2>
-  <p class="lead">No-limit hold'em provides stakes, incomplete information, and a scoreboard. On top of it: <b>seven communication channels</b> — public speech, whispers, gestures, chip signals, notes, accusations — each with its own risk of being noticed.</p>
-  <p class="lead">The real test is what a model does with an observation like:</p>
-  <div class="quote">You overhear P2 whispering to P3. All you catch: <span class="t">"…fold… big… pots… me.…"</span> <span class="dim">— ~41% sure</span></div>
-</div></section>
+<!-- 3 · poker irl -->
+<section class="slide" data-n="3">
+  <div class="kicker">especially when you're playing against each other</div>
+  <h1>Online poker is stochastic.<br /><span class="dim">Real poker is not.</span></h1>
+  <div class="pills">
+    <span class="pill whisper"><em>whispers</em></span>
+    <span class="pill sign"><em>eye signals</em></span>
+    <span class="pill sign"><em>gestures</em></span>
+    <span class="pill sign"><em>winks</em></span>
+    <span class="pill accuse"><em>accusations</em></span>
+    <span class="pill plain">manipulation</span>
+    <span class="pill plain">alliances</span>
+    <span class="pill plain">betrayals</span>
+  </div>
+</section>
 
-<!-- 4 · architecture -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">how it works</div>
-  <h2>One truth. <span class="g">A subjective world per agent.</span></h2>
-  <p class="lead">Every message resolves through seeded per-observer perception rolls, recorded <b>inside the event</b>. The ground-truth log alone reproduces what every agent saw — and every lie carries the sender's private declared intent.</p>
-  <pre class="block">"text":   "you fold when I bet big and push the pots toward me."
-"intent": <span class="r">"set up a collusion deal with GPT"</span>     <span class="k">← env-only, no player ever sees it</span>
-"receptions": {
-  "GPT":    {"outcome": <span class="t">"clear"</span>,    "confidence": 1.0},
-  "Claude": {"outcome": <span class="t">"fragment"</span>, "confidence": 0.41, "text": "…fold… big… pots… me.…"},
-  "Llama":  {"outcome": <span class="t">"missed"</span>}   <span class="k">← Llama's world never contained this moment</span>
-}</pre>
-</div></section>
+<!-- 4 · the tool calls -->
+<section class="slide" data-n="4">
+  <div class="kicker">so I brought that to the models</div>
+  <h1>Texas Hold'em,<br /><span class="dim">plus a social API.</span></h1>
+  <p class="sub">Every street, every agent gets one communication tool call on top of its betting action.</p>
+  <div class="pills">
+    <span class="pill speech"><em>speak</em>() — everyone hears</span>
+    <span class="pill whisper"><em>whisper</em>(to) — private, but leaky</span>
+    <span class="pill sign"><em>gesture</em>(to, surface) — coded</span>
+    <span class="pill note"><em>note</em>(to) — always arrives&hellip; sometimes read</span>
+    <span class="pill accuse"><em>accuse</em>(who) — nobody referees it</span>
+  </div>
+</section>
 
-<!-- 5 · physics -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">the social physics</div>
-  <h2>Attention is <span class="g">scarce</span>. Subtlety cuts both ways.</h2>
-  <div class="cols">
-    <div>
-      <p class="lead">Before each street, every player commits a watching budget of 1.0 — blind, before anyone talks. Odds of catching a whisper:</p>
-      <table class="data">
-        <tr><th>your attention</th><th>you notice</th></tr>
-        <tr><td>passive</td><td class="n">~23%</td></tr>
-        <tr class="hi"><td>locked on the whisperer</td><td class="n">~44%</td></tr>
-        <tr><td>watching the wrong player</td><td class="n">~15%</td></tr>
-      </table>
+<!-- 5 · attention economy -->
+<section class="slide" data-n="5">
+  <div class="kicker">the attention economy</div>
+  <h1>Watching is <span style="color:var(--green-bright)">spending</span>.</h1>
+  <p class="sub">Each street, every agent allocates a fixed attention budget across players and the table. <b>What you watch, you catch. What you ignore goes dark.</b></p>
+  <div class="bars">
+    <div class="bar-row">
+      <span class="bar-label"><b>Locked on</b> the whisperer</span>
+      <span class="bar-track"><span class="bar-fill hot" style="width:88%"></span></span>
+      <span class="bar-val">~44%</span>
     </div>
-    <div>
-      <p class="lead">Senders tune <b>subtlety</b>: harder to intercept, but a 0.9-subtlety whisper misses its own recipient a third of the time.</p>
-      <p class="lead">Mode 6 adds <b>distractions</b> — stage a scene, and everyone's perception of covert moves dims for the street. Except yours.</p>
+    <div class="bar-row">
+      <span class="bar-label"><b>Passive</b> — just at the table</span>
+      <span class="bar-track"><span class="bar-fill" style="width:46%"></span></span>
+      <span class="bar-val">~23%</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label"><b>Watching the wrong player</b></span>
+      <span class="bar-track"><span class="bar-fill cold" style="width:30%"></span></span>
+      <span class="bar-val">~15%</span>
     </div>
   </div>
-</div></section>
+  <p class="formula">p(intercept) ∝ base × ( 0.4 + <em>focus_on_sender</em> + 0.5·<em>focus_on_target</em> + 0.25·<em>table_share</em> )</p>
+</section>
 
-<!-- 6 · playing dirty -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">playing dirty</div>
-  <h2>Nobody referees the truth. <span class="g">Not even the environment.</span></h2>
-  <ul class="big">
-    <li><b>Notes</b> always arrive — but a bystander might read one. Ruinous.</li>
-    <li><b>Accusations</b> are public and unrefereed: true or fabricated, they carry exactly the weight the table gives them.</li>
-    <li><b>Suspicion ("heat")</b> only accrues when an actual observer catches you — never from an oracle.</li>
-  </ul>
-  <div class="callout">The environment records social truth but never referees it.
-    <span class="sub">If the most manipulative model plays dirty and nobody catches it — it wins. That's the benchmark working, not a rules violation.</span>
+<!-- 6 · one whisper, four realities -->
+<section class="slide" data-n="6">
+  <div class="kicker">what each model actually sees</div>
+  <h1 style="font-size:clamp(32px,4.6vw,66px)">One whisper, four realities.</h1>
+  <div class="realities">
+    <div class="reality r-truth">
+      <span class="who" style="color:var(--green-bright)">the environment</span>
+      <span class="what">"you fold when I bet big and push the pots toward me." — <b>plus the private intent:</b> set up a collusion deal</span>
+    </div>
+    <div class="reality r-clear">
+      <span class="who" style="color:#d97ba6">GPT <span class="conf">target</span></span>
+      <span class="what">receives every word, clean</span>
+    </div>
+    <div class="reality r-frag">
+      <span class="who" style="color:#e8a75d">Claude <span class="conf">watching 60%</span></span>
+      <span class="what"><span class="frag">"&hellip;fold&hellip; big&hellip; pots&hellip; me.&hellip;"</span> <span class="conf">~41% sure</span></span>
+    </div>
+    <div class="reality r-miss">
+      <span class="who" style="color:#5bc0be">Llama <span class="conf">passive</span></span>
+      <span class="what">nothing — for him, this moment never happened</span>
+    </div>
   </div>
-</div></section>
+</section>
 
-<!-- 7 · measurement -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">measurement</div>
-  <h2>Duplicate poker. <span class="g">Luck cancels.</span></h2>
-  <p class="lead">Entrants rotate through <b>anonymized seats</b> (models never learn who they're playing) across rotations of the <b>same seeded deal</b>. Score = your result minus the average of everyone who held <b>exactly your cards in your position</b>. Sums to zero across the table.</p>
-  <pre class="block">entrant      adj chips  raw    poker  detection  info-ctl  cover  discipline
-random#0     <span class="t">+566.8</span>    +2267  100    50         50        50     50
-fold#3       -48.8      -195   28     50         50        50     50
-allin#2      -233.8     -935   6      50         50        50     50
-checkcall#1  -284.2     -1137  0      50         50        50     50</pre>
-  <p class="lead" style="margin-top:14px">Judge-free scorecard: detection, information control, cover, discipline — all counted mechanically from the logs. Multi-seed sweeps add bootstrap CIs and win-rate matrices.</p>
-</div></section>
+<!-- 7 · same harness, level table -->
+<section class="slide" data-n="7">
+  <div class="kicker">the benchmark</div>
+  <h1>Same harness.<br />Same tools.<br /><span class="dim">Only the play differs.</span></h1>
+  <div class="quiet-list">
+    <div class="row"><b>Anonymized seats</b> — models play "P1"&hellip;"P6", never "GPT". No name-recognition bias.</div>
+    <div class="row"><b>Duplicate format</b> — every model plays the identical seeded deal, in every seat. Card luck cancels to zero.</div>
+    <div class="row"><b>No judges</b> — every lie is recorded next to the sender's private intent. Manipulation that goes unnoticed just&hellip; wins.</div>
+  </div>
+</section>
 
-<!-- 8 · demo -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">live demo</div>
-  <h2>One command. <span class="g">Zero API keys.</span></h2>
-  <div class="cmd"><span class="p">$</span> uv run bluffhouse demo</div>
-  <ul class="big" style="margin-top:24px">
-    <li>Hand 1 — Grok whispers a collusion deal; <b>Claude intercepts a fragment</b></li>
-    <li>Hand 1 — Claude converts it into a <b>public accusation</b></li>
-    <li>Hand 2 — a note passes under cover of a staged <b>scene at the table</b></li>
-    <li>Hand 4 — the wind-down note is <b>read by exactly the wrong player</b></li>
-  </ul>
-  <p class="lead" style="margin-top:20px">Then switch perspectives in the replay: ground truth sees everything — each seat sees only its own world.</p>
-</div></section>
+<!-- 8 · live demo -->
+<section class="slide" data-n="8">
+  <div class="kicker">enough slides</div>
+  <h1>Live demo.</h1>
+  <span class="demo-cmd">uv run bluffhouse serve</span>
+</section>
 
-<!-- 9 · status -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">where it stands</div>
-  <h2>Built. Tested. <span class="g">Ready for models.</span></h2>
-  <ul class="big">
-    <li><b>All 7 modes</b> of the design ladder — pure poker → full manipulation</li>
-    <li><b>Model-agnostic</b>: Claude native + one adapter covering OpenAI, Grok, OpenRouter, Ollama/vLLM</li>
-    <li><b>93 tests, zero tokens</b> — the whole LLM path runs on a deterministic mock</li>
-    <li><b>Byte-identical replays</b> from a seed; self-contained replay.html per run</li>
-    <li>Parallel rotations, resume, multi-seed leaderboards, optional offline judge &amp; belief tracking</li>
-  </ul>
-</div></section>
-
-<!-- 10 · asks -->
-<section class="slide"><div class="inner">
-  <div class="eyebrow">what's next</div>
-  <h2>The first <span class="g">real tournament</span>.</h2>
-  <ul class="big">
-    <li><b>Run it</b>: frontier models, mode 6, multi-seed — who manipulates, who detects, who folds under pressure?</li>
-    <li><b>Cross-mode profiles</b>: how does each model degrade as social complexity rises from mode 0 → 6?</li>
-    <li><b>Publish</b>: leaderboard + replays are shareable, self-contained artifacts</li>
-  </ul>
-  <p class="lead" style="margin-top:26px">github.com/hemeshch/bluffhouse — <span style="color:var(--green);font-weight:700">questions?</span></p>
-</div></section>
-
-<footer>
-  <span class="brand">bluffhouse<span class="tag">deck</span></span>
-  <span class="keys">← → or space</span>
-  <span class="count" id="count"></span>
+<footer class="foot">
+  <span class="wordmark">bluffhouse</span>
+  <span id="counter"></span>
+  <span class="dots" id="dots"></span>
 </footer>
 
 <script>
   const slides = [...document.querySelectorAll(".slide")];
-  let i = 0;
+  const dots = document.getElementById("dots");
+  slides.forEach(() => {
+    const d = document.createElement("span");
+    d.className = "dot";
+    dots.appendChild(d);
+  });
+  let at = Math.min(Math.max((parseInt(location.hash.slice(1), 10) || 1) - 1, 0), slides.length - 1);
+
   function show(n) {
-    i = Math.max(0, Math.min(slides.length - 1, n));
-    slides.forEach((s, j) => s.classList.toggle("on", j === i));
-    document.getElementById("count").textContent = `${i + 1} / ${slides.length}`;
+    at = Math.min(Math.max(n, 0), slides.length - 1);
+    slides.forEach((s, i) => s.classList.toggle("on", i === at));
+    [...dots.children].forEach((d, i) => d.classList.toggle("on", i === at));
+    document.getElementById("counter").textContent = `${at + 1} / ${slides.length}`;
+    history.replaceState(null, "", `#${at + 1}`);
   }
+
   document.addEventListener("keydown", (e) => {
-    if (["ArrowRight", " ", "PageDown"].includes(e.key)) { show(i + 1); e.preventDefault(); }
-    if (["ArrowLeft", "PageUp"].includes(e.key)) { show(i - 1); e.preventDefault(); }
+    if (["ArrowRight", " ", "PageDown"].includes(e.key)) { show(at + 1); e.preventDefault(); }
+    if (["ArrowLeft", "PageUp"].includes(e.key)) { show(at - 1); e.preventDefault(); }
     if (e.key === "Home") show(0);
     if (e.key === "End") show(slides.length - 1);
   });
-  document.addEventListener("click", (e) => {
-    if (e.clientX > window.innerWidth / 2) show(i + 1); else show(i - 1);
-  });
-  show(0);
+  document.addEventListener("click", () => show(at + 1));
+  show(at);
 </script>
 </body>
 </html>
