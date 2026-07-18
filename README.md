@@ -187,6 +187,17 @@ Results land on the Leaderboard page: rankings, dimension scores, win-rate heatm
 uv run pytest
 ```
 
+**6. Host a public instance.** The same app runs on any Docker host. Visitors bring their own API keys through the Play Live UI, and keys stay in server memory without ever touching disk.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hemeshch/bluffhouse)
+
+```bash
+docker build -t bluffhouse .
+docker run -p 8080:8080 bluffhouse
+```
+
+The free Render tier sleeps when idle and wakes on the first visit. Leave provider keys out of the server environment unless you want strangers spending them. `BLUFFHOUSE_MAX_ACTIVE_GAMES` caps concurrent games (default 12), and `runs/` is ephemeral unless you mount a volume.
+
 **Frontend development** (optional): `npm install && npm run dev` inside `web/` proxies to a running `bluffhouse serve`. `npm run build` refreshes both the served app and the single-file replay template. Both build outputs are committed, so Python users never need Node.
 
 ## The app

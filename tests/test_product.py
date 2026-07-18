@@ -175,6 +175,15 @@ def test_live_stop_writes_partial_run(tmp_path):
     assert run["hands_played"] < 50
 
 
+def test_live_respects_active_game_cap(tmp_path, monkeypatch):
+    monkeypatch.setenv("BLUFFHOUSE_MAX_ACTIVE_GAMES", "0")
+    client = TestClient(create_app(tmp_path))
+    resp = client.post("/api/live", json={
+        "seats": [{"spec": "checkcall"}, {"spec": "fold"}], "hands": 1, "mode": 0,
+    })
+    assert resp.status_code == 429
+
+
 def test_live_rejects_bad_specs(tmp_path):
     client = TestClient(create_app(tmp_path))
     bad = client.post("/api/live", json={

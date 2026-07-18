@@ -1,0 +1,14 @@
+# One-click deploy: https://render.com/deploy?repo=https://github.com/hemeshch/bluffhouse
+# Free tier: the instance sleeps when idle and wakes on the first request.
+# Visitors bring their own API keys through the Play Live UI; keys stay in
+# memory and are never written to disk. Set no provider keys in the service
+# environment unless you want strangers spending them.
+services:
+  - type: web
+    name: bluffhouse
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/hub
+    envVars:
+      - key: BLUFFHOUSE_MAX_ACTIVE_GAMES
+        value: "12"

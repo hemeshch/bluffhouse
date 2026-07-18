@@ -263,10 +263,18 @@ def serve_main(argv: list[str]) -> None:
         "and leaderboards; click through to replays.",
     )
     parser.add_argument("--dir", default="runs")
-    parser.add_argument("--port", type=int, default=8484)
+    parser.add_argument("--port", type=int, default=None, help="default 8484, or $PORT")
+    parser.add_argument(
+        "--host", default=None,
+        help="default 127.0.0.1, or $HOST; use 0.0.0.0 when hosting publicly",
+    )
     parser.add_argument("--no-open", action="store_true", help="don't open the browser")
     args = parser.parse_args(argv)
-    serve(args.dir, port=args.port, open_browser=not args.no_open)
+    import os
+
+    port = args.port if args.port is not None else int(os.environ.get("PORT", "8484"))
+    host = args.host if args.host is not None else os.environ.get("HOST", "127.0.0.1")
+    serve(args.dir, port=port, host=host, open_browser=not args.no_open)
 
 
 def main(argv: list[str] | None = None) -> None:

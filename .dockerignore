@@ -1,0 +1,11 @@
+.git
+.venv
+node_modules
+web/node_modules
+runs
+web/runs
+demos
+docs
+tests
+.github
+*.png

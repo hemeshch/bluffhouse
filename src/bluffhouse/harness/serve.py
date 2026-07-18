@@ -7,6 +7,7 @@ through the API, but every run dir still carries its own replay.html.
 """
 
 import json
+import os
 import time
 import webbrowser
 from importlib.resources import files
@@ -152,8 +153,16 @@ def create_app(root: Path):
         big_blind: int = Field(10, ge=1)
         collect_beliefs: bool = True
 
+    # public deployments: a thread bomb is one curl loop away without a cap
+    max_active = int(os.environ.get("BLUFFHOUSE_MAX_ACTIVE_GAMES", "12"))
+
     @api.post("/live")
     def live_start(req: LiveRequest) -> dict:
+        active = sum(1 for j in jobs.values() if j.status == "running")
+        if active >= max_active:
+            raise HTTPException(
+                429, f"{active} games already running on this server — try again shortly"
+            )
         seed = req.seed if req.seed is not None else int(time.time()) % 1_000_000
         for i, seat in enumerate(req.seats):
             key = seat.api_key.get_secret_value().strip() if seat.api_key else ""
@@ -192,6 +201,10 @@ def create_app(root: Path):
             raise HTTPException(400, str(exc)) from exc
         job = start_live_game(root, config, agents, run_dir_name("live", seed))
         jobs[job.id] = job
+        # keep memory bounded on long-lived public servers
+        finished = [jid for jid, j in jobs.items() if j.status != "running"]
+        for jid in finished[:-50]:
+            del jobs[jid]
         return {"job": job.id, "config": config.model_dump()}
 
     def get_job(job_id: str) -> LiveJob:
@@ -270,21 +283,26 @@ def create_app(root: Path):
     return app
 
 
-def serve(root: str | Path = "runs", port: int = 8484, open_browser: bool = True) -> None:
+def serve(
+    root: str | Path = "runs",
+    port: int = 8484,
+    open_browser: bool = True,
+    host: str = "127.0.0.1",
+) -> None:
     import uvicorn
 
     root = Path(root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     app = create_app(root)
-    url = f"http://127.0.0.1:{port}/"
+    url = f"http://{'127.0.0.1' if host == '0.0.0.0' else host}:{port}/"
     print(f"bluffhouse: {url}  (serving {root}; ctrl-c to stop)")
-    if open_browser:
+    if open_browser and host == "127.0.0.1":
         # give uvicorn a beat to bind before the browser asks
         import threading
 
         threading.Timer(0.4, webbrowser.open, args=(url,)).start()
     try:
-        uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+        uvicorn.run(app, host=host, port=port, log_level="warning")
     except KeyboardInterrupt:
         print("\nstopped")
 
