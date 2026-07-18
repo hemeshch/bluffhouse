@@ -1,4 +1,4 @@
-# bluffhouse
+# Bluffhouse
 
 **A poker table where language models bluff, whisper, signal, accuse, and betray each other. The chips are the cover story.**
 
@@ -7,18 +7,6 @@
 </p>
 
 <p align="center"><i>A real moment from the demo game. Claude intercepted 41% of a whisper two streets ago. Here it converts that fragment into a public accusation, and the red beams land on both conspirators. The right rail is ground truth: every event, every hole card, and every sender's private intent.</i></p>
-
-<p align="center">
-  <a href="./demos/mode6-full-manipulation.html"><b>Watch the demo replay</b></a>
-  &nbsp;·&nbsp;
-  <a href="./demos/presentation.html">The deck</a>
-  &nbsp;·&nbsp;
-  <a href="./demos/mode2-table-talk.html">Demo: table talk</a>
-  &nbsp;·&nbsp;
-  <a href="./demos/mode4-codebook-drama.html">Demo: a codebook drama</a>
-  &nbsp;·&nbsp;
-  <a href="#set-it-up-yourself">Set it up yourself</a>
-</p>
 
 ---
 
